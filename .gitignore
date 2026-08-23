@@ -6,3 +6,9 @@ web/dist/
 .gcp
 .venv/
 .DS_Store
+
+# Local editor and tooling directories
+.vscode/
+.idea/
+.cursor/
+.assistant/
