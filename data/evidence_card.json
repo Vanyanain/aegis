@@ -1,0 +1,12 @@
+{
+  "n": 3000,
+  "seed": 20260822,
+  "family_mix": {
+    "genuine": 0.5,
+    "ai_generated": 0.16,
+    "digital_edit": 0.14,
+    "template_forge": 0.11,
+    "recycled": 0.09
+  },
+  "disclosure": "Fully synthetic. Fake families are detection targets generated offline for detector training and evaluation only; they are never produced or exposed at serving time."
+}

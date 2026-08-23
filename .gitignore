@@ -1,4 +1,9 @@
-data/
+# The generated ledger, dispute table, cached forensic features and the demo evidence
+# subset ARE tracked, so a fresh clone runs without regenerating anything (~14 MB).
+# Excluded: the full 123 MB training corpus, which is reproducible from seed 20260822 via
+# `python -m scripts.make_receipts 3000`.
+data/evidence/
+data/evidence_scored.parquet
 __pycache__/
 *.pyc
 node_modules/

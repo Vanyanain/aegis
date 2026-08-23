@@ -124,14 +124,32 @@ def case(dispute_id: str) -> dict[str, Any]:
     return c
 
 
+def _resolve_evidence_file(rel_path: str) -> Path | None:
+    """Locate an evidence image across the two layouts it can live in.
+
+    The manifest records paths under `data/evidence/`, which is where the full generated
+    corpus lands. That corpus is 123 MB and is neither committed nor shipped, so both a
+    fresh clone and the container instead carry the small curated subset staged by
+    scripts/prepare_deploy.py. The container copies it into place; a local clone does not.
+    Checking both keeps `git clone && uvicorn` working without a regeneration step.
+    """
+    direct = ROOT / rel_path
+    if direct.exists():
+        return direct
+    demo = ROOT / "data" / "evidence_demo" / Path(rel_path).name
+    return demo if demo.exists() else None
+
+
 @app.get("/api/evidence/{item_id}/image")
 def evidence_image(item_id: str):
     s = get_store()
     v = s.evidence_verdict(item_id)
     if not v:
         raise HTTPException(404, f"unknown evidence item {item_id}")
-    p = ROOT / v["path"]
-    if not p.exists():
+    p = _resolve_evidence_file(v["path"])
+    if p is None:
+        # Expected for items outside the curated subset. The console renders a note in
+        # place of the image; the verdict itself comes from cached features and is valid.
         raise HTTPException(404, "evidence file not bundled in this deployment")
     return FileResponse(p, media_type="image/jpeg")
 
