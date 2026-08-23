@@ -1,0 +1,10 @@
+# The full evidence corpus is ~123 MB of training images and has no business in a serving
+# image. scripts/prepare_deploy.py stages a small demo subset into data/evidence_demo/.
+data/evidence/
+web/node_modules/
+web/dist/
+**/__pycache__/
+*.pyc
+.git/
+.venv/
+notebooks/

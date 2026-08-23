@@ -1,0 +1,36 @@
+{
+  "n_test": 650,
+  "accuracy": 0.6076923076923076,
+  "macro_f1": 0.5619986850756081,
+  "log_loss": 0.836004056864959,
+  "per_class": {
+    "criminal_fraud": {
+      "precision": 0.2635135135135135,
+      "recall": 0.45348837209302323,
+      "f1-score": 0.3333333333333333,
+      "support": 86.0
+    },
+    "first_party_misuse": {
+      "precision": 0.7622377622377622,
+      "recall": 0.558974358974359,
+      "f1-score": 0.6449704142011834,
+      "support": 390.0
+    },
+    "genuine_service_failure": {
+      "precision": 0.6388888888888888,
+      "recall": 0.7931034482758621,
+      "f1-score": 0.7076923076923077,
+      "support": 174.0
+    }
+  },
+  "ovr_roc_auc": {
+    "criminal_fraud": 0.7577107042718125,
+    "first_party_misuse": 0.7121301775147928,
+    "genuine_service_failure": 0.8522167487684729
+  },
+  "base_rates": {
+    "criminal_fraud": 0.13907875185735513,
+    "first_party_misuse": 0.6193164933135216,
+    "genuine_service_failure": 0.24160475482912333
+  }
+}

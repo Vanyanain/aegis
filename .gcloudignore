@@ -1,0 +1,26 @@
+# IMPORTANT: this file must exist. Without it, gcloud derives the upload set from
+# .gitignore, which excludes data/ -- and the build then fails on
+# "COPY failed: no source files were specified" because no parquet or model ever uploaded.
+# The data and models are build inputs here, not source, so they are included explicitly.
+
+.git/
+.gitignore
+**/__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# The full training corpus (~123 MB of receipt images). scripts/prepare_deploy.py stages the
+# demo subset into data/evidence_demo/, which IS uploaded.
+data/evidence/
+
+# NOTE: data/evidence_features.parquet is NOT excluded. It looks like a training
+# intermediate but the store loads it at startup -- it holds the cached forensic feature
+# vector for every evidence item, which is what serves verdicts without re-running OCR on
+# each request. Excluding it deployed a container that 500s on first request.
+# data/evidence_scored.parquet is genuinely training-only (fusion's out-of-fold input).
+data/evidence_scored.parquet
+
+web/node_modules/
+web/dist/
+notebooks/
