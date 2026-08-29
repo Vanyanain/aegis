@@ -1,68 +1,35 @@
 import { useEffect } from "react";
-import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* Page-wide scroll feel: smooth scrolling, a petal field that answers to the scroll, and
- * 3D reveals on anything marked up for them.
+/* Scroll behaviour for the landing page: depth, and reveals with a little Z in them.
  *
- * SMOOTH SCROLL. Lenis interpolates toward the native scroll position instead of jumping to
- * it, which is what gives Mercury its weight. It has to be wired into GSAP's ticker rather
- * than its own rAF loop -- running two independent loops leaves ScrollTrigger reading a
- * scroll position one frame behind Lenis, and every pinned element jitters.
+ * NATIVE SCROLLING, DELIBERATELY. An earlier build ran Lenis for Mercury-style inertial
+ * scrolling. It reads as premium on a marketing site and as broken on a tool -- the page
+ * keeps gliding after the wheel stops, which fights anyone scanning for a number. Removed.
+ * The depth below does the work instead, and it does it without taking the scroll away.
  *
- * There is deliberately NO page-wide petal field. A scroll-reactive canvas of petals was
- * built and removed: drifting blossom across tables of chargeback figures competes with the
- * numbers the page exists to show, and decoration that fights the content loses. Petals
- * belong over the hero footage, where they are part of the image rather than on top of it.
+ * NO PARTICLE FIELD EITHER. A scroll-reactive petal canvas was built and removed: drifting
+ * blossom over tables of chargeback figures competes with the numbers the page exists to
+ * show. Atmosphere belongs in the footage, not on top of the content.
  *
- * 3D REVEALS. Anything with data-reveal rises out of Z with a slight X-rotation as it
- * enters. The parent needs a perspective for that to mean anything -- without one a
- * translateZ is silently ignored, which is why most "3D" web animation looks flat.
+ * DEPTH COMES FROM SPEED DIFFERENCES. Layers marked data-parallax move at their own rate
+ * against the page, so foreground and background separate as you scroll. That is what reads
+ * as three-dimensional -- not objects flying at the reader.
  *
- * EVERYTHING HERE IS DECORATION AND FAILS SOFT. Reveals start visible in CSS and are only
- * hidden once JS confirms it can animate them; if the script never runs, or the tab is
- * backgrounded where requestAnimationFrame is suspended, the page reads as a normal
- * document instead of a blank one.
+ * FAILS SOFT. Reveal targets are visible in CSS and only hidden once a frame has genuinely
+ * rendered. A backgrounded tab suspends requestAnimationFrame entirely, so tying visibility
+ * to rAF-driven tweens renders a blank page; the watchdog below undoes it if no frame
+ * arrives, and clears the inline styles gsap.fromTo writes on creation.
  */
 
 export default function ScrollFX() {
-
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      document.documentElement.classList.add("fx-ready");
-      return;
-    }
+    if (reduced) return;
 
-    const lenis = new Lenis({
-      duration: 1.05,
-      // Slightly overshooting ease: the page settles rather than arriving abruptly.
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      wheelMultiplier: 0.95,
-      touchMultiplier: 1.6,
-      // Never smooth touch scrolling. Fighting a phone's native scroll physics feels
-      // broken in a way no amount of easing fixes.
-      syncTouch: false,
-    });
-
-    // One loop, not two. Lenis must be driven by GSAP's ticker and ScrollTrigger updated
-    // from Lenis, or the two read scroll positions a frame apart and pinned elements jitter.
-    lenis.on("scroll", () => ScrollTrigger.update());
-    const raf = (time: number) => lenis.raf(time * 1000);
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
-
-    // Hiding the reveal targets is only safe if the animation frame is genuinely running.
-    //
-    // Adding this class puts twenty elements at opacity 0 and hands responsibility for
-    // showing them to rAF-driven tweens. A backgrounded tab suspends rAF completely --
-    // measured at zero frames per second -- so on its own this recreates exactly the
-    // failure it is meant to avoid: a page that renders blank. The watchdog below removes
-    // the class again if no frame arrives, and the visibility listener restores the effect
-    // when the tab is brought forward.
     document.documentElement.classList.add("fx-ready");
 
     let frames = 0;
@@ -72,12 +39,8 @@ export default function ScrollFX() {
     const watchdog = window.setTimeout(() => {
       if (frames < 2) {
         // Nothing is animating. Reveal everything rather than leave the page empty.
-        //
-        // Dropping the class is NOT enough on its own: gsap.fromTo renders its start state
-        // immediately, writing inline opacity:0 onto every target the moment the tween is
-        // created. An inline style beats a stylesheet rule, so removing the class left
-        // eighteen of twenty elements still invisible. The tweens have to be killed and
-        // their inline properties cleared.
+        // Dropping the class alone is not enough: gsap.fromTo renders its start state
+        // immediately, and an inline opacity:0 beats any stylesheet rule.
         document.documentElement.classList.remove("fx-ready");
         const targets = gsap.utils.toArray<HTMLElement>("[data-reveal]");
         gsap.killTweensOf(targets);
@@ -88,7 +51,6 @@ export default function ScrollFX() {
 
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      document.documentElement.classList.add("fx-ready");
       ScrollTrigger.refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -98,36 +60,59 @@ export default function ScrollFX() {
         const kind = el.dataset.reveal || "rise";
         const from: gsap.TweenVars =
           kind === "tilt"
-            ? { opacity: 0, y: 70, z: -260, rotateX: 14, transformOrigin: "50% 100%" }
+            ? { opacity: 0, y: 64, z: -220, rotateX: 12, transformOrigin: "50% 100%" }
             : kind === "swing"
-            ? { opacity: 0, y: 40, z: -180, rotateY: -12, transformOrigin: "0% 50%" }
-            : { opacity: 0, y: 54, z: -140 };
+            ? { opacity: 0, y: 36, z: -160, rotateY: -10, transformOrigin: "0% 50%" }
+            : { opacity: 0, y: 46, z: -110 };
 
         gsap.fromTo(el, from, {
           opacity: 1, y: 0, z: 0, rotateX: 0, rotateY: 0,
-          duration: 1.05,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 88%",
-            once: true,
-          },
+          duration: 1, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
         });
       });
 
-      // Depth: marked layers drift at their own rate against the page.
+      // Depth. Each marked layer travels at its own rate against the page, so foreground
+      // and background pull apart as you scroll.
       gsap.utils.toArray<HTMLElement>("[data-parallax]").forEach((el) => {
         const depth = parseFloat(el.dataset.parallax || "0.12");
-        gsap.to(el, {
-          yPercent: -depth * 100,
-          ease: "none",
-          scrollTrigger: {
-            trigger: el.closest("section") || el,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 0.8,
-          },
-        });
+        gsap.fromTo(el,
+          { yPercent: depth * 50 },
+          {
+            yPercent: -depth * 50, ease: "none",
+            scrollTrigger: {
+              trigger: el.closest("section") || el,
+              start: "top bottom", end: "bottom top", scrub: 0.6,
+            },
+          });
+      });
+
+      // Full-bleed footage sections: the video drifts slower than the page and brightens
+      // as the section reaches centre, so scrolling moves THROUGH a scene rather than past
+      // a background image.
+      gsap.utils.toArray<HTMLElement>(".scene-media").forEach((el) => {
+        gsap.fromTo(el,
+          { scale: 1.16, filter: "brightness(0.5) saturate(0.7)" },
+          {
+            scale: 1.0, filter: "brightness(0.82) saturate(1)", ease: "none",
+            scrollTrigger: {
+              trigger: el.closest("section") || el,
+              start: "top bottom", end: "center center", scrub: 0.7,
+            },
+          });
+      });
+
+      // Light. A bloom behind each scene heading swells as it centres.
+      gsap.utils.toArray<HTMLElement>(".scene-glow").forEach((el) => {
+        gsap.fromTo(el,
+          { opacity: 0, scale: 0.6 },
+          {
+            opacity: 1, scale: 1.25, ease: "none",
+            scrollTrigger: {
+              trigger: el.closest("section") || el,
+              start: "top bottom", end: "bottom top", scrub: 1,
+            },
+          });
       });
     });
 
@@ -138,12 +123,10 @@ export default function ScrollFX() {
       gsap.ticker.remove(countFrame);
       document.removeEventListener("visibilitychange", onVisible);
       ctx.revert();
-      gsap.ticker.remove(raf);
-      lenis.destroy();
       document.documentElement.classList.remove("fx-ready");
     };
   }, []);
 
-  // Nothing to paint: this component only installs behaviour.
+  // Installs behaviour only; renders nothing.
   return null;
 }

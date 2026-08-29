@@ -739,19 +739,31 @@ details summary::-webkit-details-marker { color: var(--ink-4); }
 .sh-value {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: clamp(72px, 13vw, 168px);
+  /* The funnel collapse IS the show, so the figures are sized like a title card rather
+     than like a statistic sitting inside a layout. */
+  font-size: clamp(84px, 17vw, 232px);
   font-weight: 700;
   line-height: .92;
   letter-spacing: -0.05em;
   color: #fff;
-  text-shadow: 0 4px 60px rgba(0, 0, 0, .55), 0 0 100px rgba(249, 174, 197, .28);
+  text-shadow: 0 4px 70px rgba(0, 0, 0, .6), 0 0 130px rgba(249, 174, 197, .34);
   transform-style: preserve-3d;
   will-change: transform, opacity, filter;
 }
 .sh-value.is-final {
   color: var(--petal-2);
-  text-shadow: 0 4px 60px rgba(0, 0, 0, .6), 0 0 130px rgba(249, 174, 197, .6);
+  text-shadow: 0 4px 70px rgba(0, 0, 0, .65), 0 0 170px rgba(249, 174, 197, .72);
 }
+
+/* A bloom behind the figure so the light comes off the number itself. */
+.sh-scene::before {
+  content: ""; position: absolute; left: 50%; top: 42%;
+  width: min(760px, 74vw); aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(249,174,197,.2) 0%, rgba(194,69,111,.09) 38%, transparent 68%);
+  pointer-events: none; z-index: -1;
+  opacity: 0; transition: opacity .8s ease;
+}
+.sh-scene.is-active::before { opacity: 1; }
 .sh-final-tag {
   display: block;
   font-family: var(--sans);
@@ -861,3 +873,71 @@ html.fx-ready [data-reveal] { opacity: 0; }
   .lp-story, .lp-side, .lp-honest, .lp-stat { transition: none; }
   .lp-story:hover, .lp-side:hover { transform: none; }
 }
+
+
+/* ============================================================================
+ * Full-bleed footage sections.
+ *
+ * Scrolling moves through scenes rather than past cards. The video sits behind a
+ * heavy grade so type stays readable at 4.5:1 -- footage under text is the most
+ * common way a beautiful page becomes an unreadable one.
+ * ==========================================================================*/
+
+.scene {
+  position: relative;
+  min-height: 92vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  perspective: 1200px;
+}
+.scene-media {
+  position: absolute; inset: -6%;
+  width: 112%; height: 112%;
+  object-fit: cover;
+  z-index: -2;
+  will-change: transform, filter;
+}
+/* Grade + vignette. Two layers, because a single flat scrim either washes the
+   footage out or leaves the text floating on a bright patch. */
+.scene::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 60% at 50% 50%, rgba(26,16,22,.42) 0%, rgba(26,16,22,.82) 100%),
+    linear-gradient(180deg, rgba(26,16,22,.55) 0%, rgba(26,16,22,.3) 45%, rgba(26,16,22,.75) 100%);
+}
+.scene-glow {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: min(900px, 88vw); aspect-ratio: 1; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle, rgba(249,174,197,.19) 0%, rgba(194,69,111,.08) 40%, transparent 70%);
+}
+.scene-inner { position: relative; z-index: 2; text-align: center; max-width: 780px; padding: 0 26px; }
+.scene-kicker {
+  font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--petal-2); margin-bottom: 20px;
+}
+.scene-h {
+  font-size: clamp(30px, 4.6vw, 52px); font-weight: 480; line-height: 1.1;
+  letter-spacing: -0.028em; color: #fff; text-wrap: balance;
+  text-shadow: 0 2px 40px rgba(0,0,0,.7);
+}
+.scene-p {
+  font-size: clamp(14px, 1.6vw, 17px); line-height: 1.68; margin-top: 20px;
+  color: rgba(255,255,255,.86); text-shadow: 0 2px 24px rgba(0,0,0,.8);
+}
+.scene-stat {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: clamp(46px, 8vw, 96px); font-weight: 700; letter-spacing: -0.045em;
+  color: var(--petal-2); line-height: 1; margin-bottom: 8px;
+  text-shadow: 0 4px 60px rgba(0,0,0,.6), 0 0 120px rgba(249,174,197,.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-media { transform: none !important; filter: brightness(.8) !important; }
+  .scene-glow { opacity: .7 !important; transform: translate(-50%,-50%) !important; }
+}
+
+/* The closing scene is shorter than the narrative ones: it is a call to action, not a
+   chapter, and a full 92vh of sky before the footer reads as the page having stalled. */
+.scene-final { min-height: 74vh; }

@@ -36,6 +36,27 @@ const SCREENS = [
 
 const DWELL_MS = 6500;
 
+/* A full-bleed footage section. Scrolling moves through a scene rather than past a card.
+ * The video is a background: muted, looping, inert, and always behind a grade heavy enough
+ * to keep type readable. */
+function Scene({ src, kicker, stat, heading, children }: {
+  src: string; kicker?: string; stat?: string; heading: string; children?: React.ReactNode;
+}) {
+  return (
+    <section className="scene">
+      <video className="scene-media" src={src} muted loop autoPlay playsInline
+             preload="metadata" aria-hidden="true" />
+      <div className="scene-glow" aria-hidden="true" />
+      <div className="scene-inner">
+        {kicker && <div className="scene-kicker">{kicker}</div>}
+        {stat && <div className="scene-stat" data-reveal="rise">{stat}</div>}
+        <h2 className="scene-h" data-reveal="rise">{heading}</h2>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
   const [q, setQ] = useState<Qual | null>(null);
   const [rings, setRings] = useState<Rings | null>(null);
@@ -139,45 +160,40 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- the problem ---------------- */}
-      <section className="lp-band" id="problem">
-        <div className="lp-wrap">
-          <h2 className="lp-h2" data-reveal="rise">Two things are true, and nobody has connected them.</h2>
-          <div className="lp-two">
-            <article className="lp-story" data-reveal="tilt">
-              <div className="lp-num">01</div>
-              <h3>The only rule that wins is decided before the fight.</h3>
-              <p>
-                CE 3.0 needs two prior undisputed transactions on the same credential, aged
-                120–364 days, matching the disputed order on specific data elements. Most
-                merchants discover at dispute time that their pipeline never stored a device
-                fingerprint. By then it is four months too late to fix.
-              </p>
-            </article>
-            <article className="lp-story" data-reveal="tilt">
-              <div className="lp-num">02</div>
-              <h3>The evidence layer itself is now under attack.</h3>
-              <p>
-                The share of flagged fake receipts that are AI-generated went from 0% in March
-                2025 to 70.8% by mid-May 2026. When a customer submits a “damaged item” photo or
-                a fabricated receipt, no merchant dispute tool checks whether it is real.
-              </p>
-            </article>
-          </div>
-          <div className="lp-quote" data-reveal="swing">
-            <p>
-              A <strong>recycled receipt</strong> — genuine, unaltered, from a different real
-              order — is forensically perfect. No pixel-level method will ever flag it. AEGIS
-              catches it because it holds the transaction ledger and can check the amount, date
-              and merchant against the actual charge.
-            </p>
-            <footer>Owning both sides is what makes the detection possible.</footer>
-          </div>
-        </div>
-      </section>
+      {/* ---------------- the problem, as a scene ---------------- */}
+      <Scene
+        src="/video/bg-macro.mp4"
+        kicker="The problem"
+        heading="The only rule that wins is decided months before the fight."
+      >
+        <p className="scene-p" data-reveal="rise">
+          Compelling Evidence 3.0 needs two prior undisputed transactions on the same
+          credential, aged 120&ndash;364 days, matching the disputed order on specific data
+          elements. Most merchants discover at dispute time that their pipeline never stored
+          a device fingerprint. By then it is four months too late to fix.
+        </p>
+      </Scene>
+
+      <Scene
+        src="/video/bg-gate.mp4"
+        kicker="And the evidence itself"
+        stat="70.8%"
+        heading="of flagged fake receipts are now AI-generated."
+      >
+        <p className="scene-p" data-reveal="rise">
+          Up from zero in March 2025. When a customer submits a &ldquo;damaged item&rdquo;
+          photo or a fabricated receipt, no merchant dispute tool checks whether it is real.
+        </p>
+        <p className="scene-p" data-reveal="rise">
+          A <strong>recycled receipt</strong> &mdash; genuine, unaltered, from a different
+          real order &mdash; is forensically perfect. No pixel-level method will ever flag
+          it. AEGIS catches it because it holds the transaction ledger and can check the
+          amount, date and merchant against the actual charge.
+        </p>
+      </Scene>
 
       {/* ---------------- numbers ---------------- */}
-      <section className="lp-band lp-band-tint" id="numbers">
+      <section className="lp-band lp-band-tint" id="numbers" data-parallax="0.05">
         <div className="lp-wrap">
           <h2 className="lp-h2" data-reveal="rise">We ran Visa's actual gate over real chargebacks.</h2>
           <p className="lp-lede">
@@ -271,7 +287,7 @@ export default function Landing() {
       </section>
 
       {/* ---------------- method / honesty ---------------- */}
-      <section className="lp-band lp-band-dark" id="honesty">
+      <section className="lp-band lp-band-dark" id="honesty" data-parallax="0.05">
         <div className="lp-wrap">
           <h2 className="lp-h2 lp-h2-inv" data-reveal="rise">We publish the results that disappoint us.</h2>
           <p className="lp-lede lp-lede-inv">
@@ -305,17 +321,22 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- final CTA ---------------- */}
-      <section className="lp-final">
-        <div className="lp-wrap">
-          <h2 className="lp-h2" data-reveal="rise">See which of your disputes are actually defensible.</h2>
-          <p className="lp-lede">
-            The console runs on public data out of the box. Connect Stripe with a read-only key
-            to check its native CE 3.0 verdict against the rulebook on your own disputes.
+      {/* ---------------- final CTA, as the closing scene ---------------- */}
+      <section className="scene scene-final">
+        <video className="scene-media" src="/video/bg-sky.mp4" muted loop autoPlay playsInline
+               preload="metadata" aria-hidden="true" />
+        <div className="scene-glow" aria-hidden="true" />
+        <div className="scene-inner">
+          <h2 className="scene-h" data-reveal="rise">
+            See which of your disputes are actually defensible.
+          </h2>
+          <p className="scene-p" data-reveal="rise">
+            The console runs on public data out of the box. Connect Stripe with a read-only
+            key to check its native CE&nbsp;3.0 verdict against the rulebook on your own disputes.
           </p>
-          <div className="lp-cta-row">
+          <div className="lp-cta-row" data-reveal="rise" style={{ marginTop: 32 }}>
             <Link to="/console" className="lp-btn lp-btn-primary lp-btn-lg">Open the console</Link>
-            <Link to="/console/connections" className="lp-btn lp-btn-ghost lp-btn-lg">Connect Stripe</Link>
+            <Link to="/console/connections" className="lp-btn lp-btn-glass lp-btn-lg">Connect Stripe</Link>
           </div>
         </div>
       </section>
