@@ -626,60 +626,6 @@ details summary::-webkit-details-marker { color: var(--ink-4); }
 .lp-disclaimer p { font-size: 12px; line-height: 1.7; color: #a08b96; }
 .lp-disclaimer strong { color: #e3d2da; font-weight: 600; }
 
-/* ============================================================================
- * Falling petals.
- *
- * Confined to the landing hero and drawn behind the content at low opacity. A
- * fraud-risk console is not the place for confetti, and petals drifting across
- * a table of chargeback figures would be actively hostile to reading them --
- * so the console itself gets the sakura palette and none of the motion.
- *
- * Pure CSS on a fixed set of nodes: no canvas loop, no rAF, nothing that keeps
- * a phone's GPU awake. `prefers-reduced-motion` removes them entirely rather
- * than merely slowing them, because for a vestibular trigger a slow drift is
- * not meaningfully better than a fast one.
- * ==========================================================================*/
-
-.petals {
-  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
-  z-index: 0;
-}
-.petal {
-  position: absolute; top: -6%;
-  width: 12px; height: 12px;
-  background: var(--petal-2);
-  /* An asymmetric border-radius reads as a petal; a circle reads as a bubble. */
-  border-radius: 100% 0 100% 0;
-  opacity: 0;
-  animation: petal-fall linear infinite;
-  will-change: transform, opacity;
-}
-.petal:nth-child(3n)   { background: var(--petal-1); width: 9px;  height: 9px; }
-.petal:nth-child(3n+1) { background: var(--petal-3); width: 14px; height: 14px; }
-
-@keyframes petal-fall {
-  0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-  8%   { opacity: .85; }
-  50%  { transform: translate3d(38px, 46vh, 0) rotate(180deg); }
-  85%  { opacity: .7; }
-  100% { transform: translate3d(-26px, 96vh, 0) rotate(400deg); opacity: 0; }
-}
-
-/* The hero needs a stacking context so petals sit behind the copy, not over it. */
-.lp-hero { position: relative; }
-.lp-hero > .lp-wrap { position: relative; z-index: 1; }
-
-/* A branch silhouette anchoring the top corner, drawn in CSS so there is no image to load. */
-.lp-branch {
-  position: absolute; top: 0; right: 0; width: 340px; height: 200px;
-  pointer-events: none; opacity: .5; z-index: 0;
-}
-@media (max-width: 900px) { .lp-branch { display: none; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .petals { display: none; }
-  .lp-progress { animation: none; transform: scaleX(1); }
-}
 
 /* ============================================================================
  * Scroll-scrubbed cinematic hero.
@@ -883,12 +829,6 @@ details summary::-webkit-details-marker { color: var(--ink-4); }
  * Page-wide scroll effects.
  * ==========================================================================*/
 
-/* The petal field sits above the page background and below everything readable.
-   Fixed, so it drifts across sections rather than scrolling away with one. */
-.fx-petals {
-  position: fixed; inset: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 1;
-}
 /* Over the dark bands the petals would otherwise vanish into the plum; screen
    blending lifts them back out without touching the type. */
 .lp-band-dark, .lp-footer { position: relative; z-index: 2; }
@@ -917,7 +857,6 @@ html.fx-ready [data-reveal] { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fx-petals { display: none; }
   html.fx-ready [data-reveal] { opacity: 1; }
   .lp-story, .lp-side, .lp-honest, .lp-stat { transition: none; }
   .lp-story:hover, .lp-side:hover { transform: none; }
