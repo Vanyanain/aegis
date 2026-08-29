@@ -747,16 +747,43 @@ details summary::-webkit-details-marker { color: var(--ink-4); }
   position: absolute; left: 0; right: 0; top: 50%;
   transform: translateY(-50%);
   transform-style: preserve-3d;
+  transition: opacity .45s ease, visibility .45s ease;
+
+  /* Visible BY DEFAULT. The first scene must render with no JavaScript at all -- if the
+     script fails, is still loading, or the tab is backgrounded (where requestAnimationFrame
+     is suspended and every GSAP tween silently stops), a hero whose content starts at
+     opacity 0 renders as a blank page. Progressive enhancement: CSS shows the opening
+     scene, then JS takes over sequencing by adding .is-live to the section. */
+  opacity: 0;
+  visibility: hidden;
 }
+.sh-scene:first-child { opacity: 1; visibility: visible; }
+
+.sh.is-live .sh-scene { opacity: 0; visibility: hidden; }
+.sh.is-live .sh-scene.is-active { opacity: 1; visibility: visible; }
 /* No-pin fallback. Driven by a class the component sets from the same media queries it
    uses for its own branch, so layout and behaviour cannot disagree -- a bare media query
    here would un-stack the scenes at widths where JS was still running the pinned scrub. */
-.sh.is-simple { height: auto; padding: 96px 0; }
-.sh.is-simple .sh-scene {
-  position: relative; top: auto; transform: none; margin-bottom: 72px;
-}
+.sh.is-simple { height: auto; min-height: 0; padding: 88px 22px; }
 .sh.is-simple .sh-overlay-video { display: none; }
-.sh.is-simple .sh-media { position: absolute; }
+
+.sh-simple { position: relative; z-index: 2; text-align: center; max-width: 640px; margin: 0 auto; }
+.sh-simple .sh-sub { margin-bottom: 34px; }
+
+/* The funnel as a compact strip: the same argument in one screen instead of five. */
+.sh-funnel-strip { list-style: none; display: grid; gap: 1px; background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.16); border-radius: 12px; overflow: hidden; }
+.sh-funnel-strip li {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 13px 16px; background: rgba(28, 16, 22, .58); text-align: left;
+}
+.sh-funnel-strip li.is-final { background: rgba(194, 69, 111, .3); }
+.sh-strip-n {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: 22px; font-weight: 700; color: #fff; min-width: 4.2em;
+}
+.sh-funnel-strip li.is-final .sh-strip-n { color: var(--petal-2); }
+.sh-strip-l { font-size: 13px; color: rgba(255,255,255,.82); line-height: 1.4; }
 
 .sh-kicker {
   font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;

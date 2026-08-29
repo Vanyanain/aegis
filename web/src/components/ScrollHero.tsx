@@ -37,6 +37,10 @@ type Funnel = {
   funnel: { cleared_prior_gate: number; qualified: number; blocked_no_main_anchor: number };
 };
 
+/* Scroll positions at which each scene takes over. Module-level so the animation and the
+ * content are driven by one list rather than two that can drift apart. */
+const AT = [0, 0.24, 0.44, 0.63, 0.82];
+
 type Scene = {
   at: number;          // scroll progress where this scene takes over
   value?: string;
@@ -59,22 +63,28 @@ export default function ScrollHero() {
   // media queries, because deciding once at mount leaves a resized or rotated viewport
   // stuck in the wrong mode -- mounting narrow and widening left every scene revealed at
   // once, stacked on top of each other.
-  const [simple, setSimple] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-        window.matchMedia("(max-width: 860px)").matches)
-  );
+  // A width of 0 means the viewport has not been measured yet (a detached frame, a hidden
+  // tab, a preview pane mid-layout). Treating it as "narrow" drops a desktop visitor into
+  // the mobile fallback and never recovers, so it is explicitly excluded.
+  const isSimple = () => {
+    if (typeof window === "undefined") return false;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+    const w = window.innerWidth;
+    return w > 0 && w <= 860;
+  };
+
+  const [simple, setSimple] = useState(isSimple);
 
   useEffect(() => {
-    const queries = [
-      window.matchMedia("(prefers-reduced-motion: reduce)"),
-      window.matchMedia("(max-width: 860px)"),
-    ];
-    const sync = () => setSimple(queries.some((q) => q.matches));
-    queries.forEach((q) => q.addEventListener("change", sync));
+    const sync = () => setSimple(isSimple());
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    mq.addEventListener("change", sync);
+    window.addEventListener("resize", sync);
     sync();
-    return () => queries.forEach((q) => q.removeEventListener("change", sync));
+    return () => {
+      mq.removeEventListener("change", sync);
+      window.removeEventListener("resize", sync);
+    };
   }, []);
 
   useEffect(() => {
@@ -88,31 +98,31 @@ export default function ScrollHero() {
   const f = data?.funnel;
   const scenes: Scene[] = [
     {
-      at: 0,
+      at: AT[0],
       kicker: "Adjudication Evidence & Genuine-Intent Scoring",
       label: "Most chargebacks are lost months before anyone fights them.",
       sub: "We ran Visa's Compelling Evidence 3.0 gate, unmodified, over real reported chargebacks.",
     },
     {
-      at: 0.24,
+      at: AT[1],
       value: (data?.n_chargebacks ?? 20663).toLocaleString("en-US"),
       label: "real reported chargebacks",
       sub: "IEEE-CIS, Vesta Corporation. Every one a genuine dispute, not a simulation.",
     },
     {
-      at: 0.44,
+      at: AT[2],
       value: (data?.n_assessable ?? 6244).toLocaleString("en-US"),
       label: "raised late enough to assess",
       sub: "CE 3.0 needs priors aged 120–364 days. The rest cannot qualify by construction.",
     },
     {
-      at: 0.63,
+      at: AT[3],
       value: String(f?.cleared_prior_gate ?? 146),
       label: "clear the prior-history gate",
       sub: "Two undisputed transactions on the same credential, inside the window.",
     },
     {
-      at: 0.82,
+      at: AT[4],
       value: String(f?.qualified ?? 3),
       label: "actually qualify",
       sub: `${f?.blocked_no_main_anchor ?? 49} of the ${f?.cleared_prior_gate ?? 146} that got this far fail for one reason: no IP or device was ever captured.`,
@@ -129,7 +139,7 @@ export default function ScrollHero() {
       // No pin, no scrub: the scenes flow down the page normally (see the matching CSS
       // breakpoint, which un-stacks them from absolute positioning).
       setReady(true);
-      gsap.set(sceneEls.current.filter(Boolean), { autoAlpha: 1, y: 0, filter: "none" });
+      sceneEls.current.forEach((el) => el?.classList.add("is-active"));
       ScrollTrigger.getById("aegis-hero")?.kill();
       return;
     }
@@ -141,6 +151,15 @@ export default function ScrollHero() {
     const build = () => {
       setReady(true);
       const duration = v.duration || 0;
+
+      // Hand sequencing over to JS only once the trigger is genuinely about to exist.
+      container.classList.add("is-live");
+
+      // Reset the active index HERE, not only in cleanup. This effect rebuilds when the
+      // live figures arrive; if the index still reads 0 from the previous build, the first
+      // apply() sees "no change" and skips the fade -- while the fresh gsap.set below has
+      // just hidden every scene. The result is a hero with nothing on it at all.
+      activeRef.current = -1;
 
       // This effect runs twice: once on mount, again when the live figures arrive. Killing
       // the timelines in cleanup is not enough -- any in-flight gsap.to on a scene element
@@ -156,7 +175,6 @@ export default function ScrollHero() {
         const sub = el.querySelector(".sh-sub");
         const cta = el.querySelector(".sh-cta");
 
-        gsap.set(el, { autoAlpha: 0 });
         const tl = gsap.timeline({ paused: true });
         if (num) {
           // Numbers arrive along Z so they read as coming toward the viewer, which is what
@@ -205,10 +223,11 @@ export default function ScrollHero() {
         watchdog = window.setTimeout(() => { seeking = false; }, 320);
       };
 
-      // Scene windows, derived once from the `at` marks.
-      const bounds = scenes.map((sc, i) => ({
-        start: sc.at,
-        end: i + 1 < scenes.length ? scenes[i + 1].at : 1.0001,
+      // Scene windows come from the fixed AT marks, not from `scenes` -- the latter is a
+      // new array each render and must not be captured by a closure that outlives it.
+      const bounds = AT.map((start, i) => ({
+        start,
+        end: i + 1 < AT.length ? AT[i + 1] : 1.0001,
       }));
 
       const apply = (p: number) => {
@@ -229,25 +248,28 @@ export default function ScrollHero() {
         // several windows in one frame -- three of them ended up stacked on screen at once.
         // Driving opacity from the single source of truth cannot desynchronise.
         const found = bounds.findIndex((b) => p >= b.start && p < b.end);
-        const active = found === -1 ? scenes.length - 1 : found;
+        const active = found === -1 ? AT.length - 1 : found;
 
         // Only act on a CHANGE of active scene. Tweening on every frame restarted the
         // fade continuously, so opacity never converged -- three scenes sat at 0.2-0.4 on
         // top of each other instead of one at 1.
         if (active !== activeRef.current) {
+          // Visibility is a CSS class toggle, not a GSAP tween.
+          //
+          // Driving it through gsap.to put the single most important thing on screen behind
+          // the JS ticker, and when a tween failed to run the hero rendered completely
+          // empty -- the whole page looked dead. A class toggle with a CSS transition is
+          // GPU-composited, cannot be starved, and degrades to an instant cut in the worst
+          // case rather than to nothing at all. GSAP still drives the inner fly-in, which
+          // is decoration and safe to lose.
           sceneEls.current.forEach((el, i) => {
-            if (!el) return;
-            gsap.to(el, {
-              autoAlpha: i === active ? 1 : 0,
-              duration: 0.4,
-              overwrite: "auto",
-              ease: "power2.out",
-            });
+            el?.classList.toggle("is-active", i === active);
           });
           timelines[active]?.restart();
           activeRef.current = active;
         }
       };
+
 
       st = ScrollTrigger.create({
         id: "aegis-hero",
@@ -271,15 +293,22 @@ export default function ScrollHero() {
 
     return () => {
       v.removeEventListener("seeked", onSeekedOuter);
+      container.classList.remove("is-live");
       st?.kill();
       timelines.forEach((t) => t.kill());
       gsap.killTweensOf(sceneEls.current.filter(Boolean));
       ScrollTrigger.getById("aegis-hero")?.kill();
       activeRef.current = -1;
     };
-    // Rebuilt when the live figures land (so scenes show real values, not placeholders)
-    // and when the viewport crosses the breakpoint in either direction.
-  }, [data, simple]);
+    // Depends ONLY on the layout mode. It deliberately does NOT depend on `data`.
+    //
+    // Rebuilding the whole ScrollTrigger whenever the live figures arrived was the source
+    // of a string of failures: in-flight tweens outliving their build, the active-scene
+    // index surviving a teardown so the first apply() skipped the fade, and a torn-down
+    // trigger leaving the hero blank. None of it was necessary -- the numbers are just text
+    // inside nodes React already owns, and GSAP only ever touches the refs, which persist
+    // across a re-render. Build the machinery once; let React update the words.
+  }, [simple]);
 
   return (
     <section className={`sh ${simple ? "is-simple" : ""}`} ref={wrap}>
@@ -309,6 +338,28 @@ export default function ScrollHero() {
         <div className="sh-vignette" />
       </div>
 
+      {simple ? (
+        /* Compact fallback. Stacking five full-height scenes produced a 20,000px page of
+           giant numbers with no motion to justify it -- worse on a phone than the desktop
+           version it was standing in for. One headline, then the funnel as a tight strip. */
+        <div className="sh-simple">
+          <div className="sh-kicker">{scenes[0].kicker}</div>
+          <div className="sh-label is-headline">{scenes[0].label}</div>
+          <div className="sh-sub">{scenes[0].sub}</div>
+          <ol className="sh-funnel-strip">
+            {scenes.slice(1).map((sc, i) => (
+              <li key={i} className={sc.final ? "is-final" : ""}>
+                <span className="sh-strip-n">{sc.value}</span>
+                <span className="sh-strip-l">{sc.label}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="sh-cta">
+            <Link to="/console" className="lp-btn lp-btn-primary lp-btn-lg">Open the console</Link>
+            <Link to="/console/real" className="lp-btn lp-btn-glass lp-btn-lg">See the working</Link>
+          </div>
+        </div>
+      ) : (
       <div className="sh-scenes">
         {scenes.map((s, i) => (
           <div key={i} className="sh-scene" ref={(el) => (sceneEls.current[i] = el)}>
@@ -330,8 +381,9 @@ export default function ScrollHero() {
           </div>
         ))}
       </div>
+      )}
 
-      {ready && <div className="sh-hint" aria-hidden="true"><span /></div>}
+      {ready && !simple && <div className="sh-hint" aria-hidden="true"><span /></div>}
     </section>
   );
 }
