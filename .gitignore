@@ -4,6 +4,17 @@
 # `python -m scripts.make_receipts 3000`.
 data/evidence/
 data/evidence_scored.parquet
+
+# RAW DOWNLOADED DATASETS -- never commit these.
+# data/real holds the IEEE-CIS source CSVs (train_transaction.csv alone is 651 MB) and the
+# CORD/SROIE arrow shards: 3.9 GB in total. data/evidence_real holds 2,400 full-resolution
+# receipt photographs, 688 MB. GitHub hard-rejects any single file over 100 MB, and none of
+# it belongs in version control anyway -- every byte is re-downloadable from Hugging Face by
+# scripts/, and the derived parquet files that the app actually reads ARE committed.
+data/real/
+data/evidence_real/
+data/evidence_real_features.parquet
+data/_adv_tmp/
 __pycache__/
 *.pyc
 node_modules/

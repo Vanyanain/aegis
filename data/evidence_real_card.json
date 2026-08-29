@@ -1,0 +1,13 @@
+{
+  "n": 2400,
+  "seed": 20260822,
+  "family_mix": {
+    "genuine": 0.5,
+    "copy_move": 0.22,
+    "splice": 0.16,
+    "recycled": 0.12
+  },
+  "base_documents": "CORD (naver-clova-ix/cord-v2) + SROIE (ICDAR 2019 RRC)",
+  "methodology": "Real photographs; manipulations applied programmatically to real annotated regions. Same methodology as DocTamper (CVPR 2023) and AIForge-Doc (2026).",
+  "disclosure": "Manipulated images are detection targets built offline for detector training and evaluation. They are never produced or exposed at serving time."
+}

@@ -1,0 +1,243 @@
+{
+  "n_rings": 1000,
+  "n_entities_in_rings": 4535,
+  "n_transactions_in_rings": 17739,
+  "chargeback_rate_in_rings": 0.06730931845087096,
+  "chargeback_rate_outside": 0.03398911663911201,
+  "lift": 1.9803197348593835,
+  "chargeback_value_in_rings_inr": 11625147.512,
+  "largest_rings": [
+    {
+      "ring_id": 0,
+      "n_entities": 5,
+      "n_devices": 1,
+      "n_transactions": 59,
+      "n_chargebacks": 17,
+      "value_inr": 1180195.28,
+      "chargeback_value_inr": 420107.6,
+      "chargeback_rate": 0.288135593220339,
+      "shared_card_products": 5,
+      "entities": [
+        "C_25f11c785767f1",
+        "C_2f0cd8f0ce09f5",
+        "C_934ded6413b5d5",
+        "C_9d68886aae339d",
+        "C_cc837d0bdf851c"
+      ],
+      "devices": [
+        "e5267a9cf43a3d44"
+      ]
+    },
+    {
+      "ring_id": 1,
+      "n_entities": 6,
+      "n_devices": 1,
+      "n_transactions": 15,
+      "n_chargebacks": 15,
+      "value_inr": 363000.0,
+      "chargeback_value_inr": 363000.0,
+      "chargeback_rate": 1.0,
+      "shared_card_products": 6,
+      "entities": [
+        "C_555a396006489b",
+        "C_7daabb86eb73a9",
+        "C_86d7d774c1df3f",
+        "C_a894bc84beca16",
+        "C_ac6a866bd71eeb",
+        "C_e48962e83143a4"
+      ],
+      "devices": [
+        "936fef69b496a8b8"
+      ]
+    },
+    {
+      "ring_id": 2,
+      "n_entities": 5,
+      "n_devices": 2,
+      "n_transactions": 92,
+      "n_chargebacks": 78,
+      "value_inr": 527863.6,
+      "chargeback_value_inr": 349316.0,
+      "chargeback_rate": 0.8478260869565217,
+      "shared_card_products": 4,
+      "entities": [
+        "C_76065a2d26cbea",
+        "C_77fc4257d04d78",
+        "C_7da720d8e49a14",
+        "C_b122246f741b81",
+        "C_ba7d434c2df67e"
+      ],
+      "devices": [
+        "b3ddd452648e9f78",
+        "bc4ae57e6d1b105b"
+      ]
+    },
+    {
+      "ring_id": 3,
+      "n_entities": 16,
+      "n_devices": 5,
+      "n_transactions": 108,
+      "n_chargebacks": 31,
+      "value_inr": 618464.0,
+      "chargeback_value_inr": 304040.0,
+      "chargeback_rate": 0.28703703703703703,
+      "shared_card_products": 15,
+      "entities": [
+        "C_15f417b18f6bc1",
+        "C_1d388746cff9d9",
+        "C_220cb0c8688bc3",
+        "C_23e033822b197a",
+        "C_30f716c9e9bafd",
+        "C_38cfe5983a00ec",
+        "C_4f043e7dbf8be9",
+        "C_5e9511e858202d",
+        "C_78e485f856833b",
+        "C_8410084d613a72",
+        "C_8a417a6f9c5caf",
+        "C_928a605de1e63d",
+        "C_9ebaa450c1433d",
+        "C_cdfba2bf7369c7",
+        "C_d35faec92f9a8e",
+        "C_f9c731164d8785"
+      ],
+      "devices": [
+        "89f1bd20e2ff440a",
+        "c1e5ce9cc5d1bc42",
+        "c42bd9fcdbcd3386",
+        "880b1971edf8b462",
+        "9776aed02761fd99"
+      ]
+    },
+    {
+      "ring_id": 4,
+      "n_entities": 4,
+      "n_devices": 1,
+      "n_transactions": 9,
+      "n_chargebacks": 3,
+      "value_inr": 340595.2,
+      "chargeback_value_inr": 272800.0,
+      "chargeback_rate": 0.3333333333333333,
+      "shared_card_products": 4,
+      "entities": [
+        "C_99f5faf71971f3",
+        "C_eb6e690a16a174",
+        "C_fc2710851b1df7",
+        "C_fd275e72b40c14"
+      ],
+      "devices": [
+        "c14e6bc2e90ab3fc"
+      ]
+    },
+    {
+      "ring_id": 5,
+      "n_entities": 5,
+      "n_devices": 1,
+      "n_transactions": 17,
+      "n_chargebacks": 7,
+      "value_inr": 414898.0,
+      "chargeback_value_inr": 264000.0,
+      "chargeback_rate": 0.4117647058823529,
+      "shared_card_products": 4,
+      "entities": [
+        "C_1e37087ff4e473",
+        "C_3650108112e4fb",
+        "C_9511ddffcda9af",
+        "C_979bfddb6687ad",
+        "C_c96d320898681a"
+      ],
+      "devices": [
+        "eaa71067fc290024"
+      ]
+    },
+    {
+      "ring_id": 6,
+      "n_entities": 6,
+      "n_devices": 1,
+      "n_transactions": 32,
+      "n_chargebacks": 19,
+      "value_inr": 376728.88,
+      "chargeback_value_inr": 250800.0,
+      "chargeback_rate": 0.59375,
+      "shared_card_products": 6,
+      "entities": [
+        "C_08db74764d1d30",
+        "C_0bdc8f35c1e695",
+        "C_450df2054cd8b7",
+        "C_6ddba00248e7f0",
+        "C_8d6a1beff0b379",
+        "C_cdd790f29b04ac"
+      ],
+      "devices": [
+        "2bc7444fd688bcb9"
+      ]
+    },
+    {
+      "ring_id": 7,
+      "n_entities": 4,
+      "n_devices": 1,
+      "n_transactions": 41,
+      "n_chargebacks": 17,
+      "value_inr": 463584.0,
+      "chargeback_value_inr": 225984.0,
+      "chargeback_rate": 0.4146341463414634,
+      "shared_card_products": 4,
+      "entities": [
+        "C_3a98ccba0a50f5",
+        "C_43b981845acf84",
+        "C_4cd1efdaf5186f",
+        "C_dc5ac4a3a70752"
+      ],
+      "devices": [
+        "0b3b2363d968e777"
+      ]
+    },
+    {
+      "ring_id": 8,
+      "n_entities": 4,
+      "n_devices": 1,
+      "n_transactions": 15,
+      "n_chargebacks": 12,
+      "value_inr": 242259.6,
+      "chargeback_value_inr": 224400.0,
+      "chargeback_rate": 0.8,
+      "shared_card_products": 3,
+      "entities": [
+        "C_54aa7a3b0ccf37",
+        "C_6457fdbd55b281",
+        "C_beaa7cb1dc0af5",
+        "C_f344478844ae95"
+      ],
+      "devices": [
+        "e8d6b78831977671"
+      ]
+    },
+    {
+      "ring_id": 9,
+      "n_entities": 4,
+      "n_devices": 1,
+      "n_transactions": 5,
+      "n_chargebacks": 5,
+      "value_inr": 220000.0,
+      "chargeback_value_inr": 220000.0,
+      "chargeback_rate": 1.0,
+      "shared_card_products": 2,
+      "entities": [
+        "C_2122a9d1be7ce0",
+        "C_376fb66a7870a9",
+        "C_3e4c264f6c6705",
+        "C_a8f7f11484962e"
+      ],
+      "devices": [
+        "2d37cc7b8eba9d7c"
+      ]
+    }
+  ],
+  "excluded_hairballs": [
+    {
+      "n_entities": 1979,
+      "n_transactions": 23206,
+      "n_chargebacks": 2411
+    }
+  ],
+  "method": "Entities linked by shared device fingerprint; devices touching more than 6 entities discarded as non-identifying; components of at least 3 entities reported."
+}

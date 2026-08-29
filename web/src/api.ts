@@ -29,3 +29,8 @@ export const inrCompact = (v: number) => {
 };
 
 export const pct = (v: number, frac = 1) => (v * 100).toFixed(frac) + "%";
+
+// Counts use Western grouping. Indian lakh grouping is correct for RUPEES, but applied to a
+// row count it renders 590,540 as "5,90,540", which reads as a different number entirely to
+// most people looking at a dataset size.
+export const count = (v: number) => v.toLocaleString("en-US");

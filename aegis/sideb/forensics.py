@@ -50,7 +50,22 @@ except ImportError:  # pragma: no cover
 # Legal Indian GST slabs. A blended basket lands between these, never outside them.
 GST_SLABS = (0.0, 5.0, 12.0, 18.0, 28.0)
 
-MONEY = re.compile(r"(\d[\d,]*\.\d{2})")
+# Ceiling on how far a total may exceed its subtotal. The worst realistic case is a high
+# tax slab stacked on a service charge (28% GST, or 11% PB1 + 10% service in Indonesia,
+# plus rounding). Anything beyond this is not a tax, it is a different number.
+MAX_UPLIFT = 0.35
+
+# Money on a real receipt is not always "1,234.56".
+#
+# The first version of this pattern required two decimal places, which silently matched
+# NOTHING on the CORD corpus: Indonesian receipts write amounts as "20,000" and
+# "1,591,600" with no decimal part at all. The arithmetic layer -- the headline feature --
+# parsed 0.04 of its fields on real documents while appearing to work perfectly on the
+# rendered corpus, because the rendered corpus was written in the one format the regex knew.
+#
+# This accepts grouped amounts with or without a fractional part, in either separator
+# convention, and `_money` below decides which convention a given string is using.
+MONEY = re.compile(r"(?<![\d.,])(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?![\d])")
 
 
 @dataclass
@@ -98,6 +113,36 @@ def read_ocr(img: Image.Image) -> OcrResult:
     return OcrResult(text, words)
 
 
+def _money(tok: str) -> float | None:
+    """Interpret one matched token, resolving the separator convention.
+
+    A trailing group of THREE digits after a separator is a thousands group ("20,000" and
+    "20.000" are both twenty thousand). A trailing group of one or two digits is a
+    fractional part ("12.50", "12,50"). Anything else is read as a plain integer. Guessing
+    wrong here is a factor-of-1000 error on the total, so it is resolved explicitly rather
+    than by assuming a locale.
+    """
+    tok = tok.strip()
+    if not tok:
+        return None
+    last_sep = max(tok.rfind("."), tok.rfind(","))
+    if last_sep == -1:
+        try:
+            return float(tok)
+        except ValueError:
+            return None
+    tail = tok[last_sep + 1:]
+    head = tok[:last_sep].replace(",", "").replace(".", "")
+    try:
+        if len(tail) == 3:                 # thousands group
+            return float(head + tail)
+        if len(tail) in (1, 2):            # fractional part
+            return float(f"{head}.{tail}")
+        return float(tok.replace(",", "").replace(".", ""))
+    except ValueError:
+        return None
+
+
 def _num(s: str) -> float | None:
     """Last monetary value on a line.
 
@@ -106,12 +151,12 @@ def _num(s: str) -> float | None:
     from the amount, and removing them yields the phantom value 1550.68.
     """
     m = MONEY.findall(s)
-    if not m:
-        return None
-    try:
-        return float(m[-1].replace(",", ""))
-    except ValueError:
-        return None
+    for tok in reversed(m):
+        v = _money(tok)
+        # Quantities and line numbers also match the pattern; a receipt total is not 1.
+        if v is not None and v >= 10:
+            return v
+    return _money(m[-1]) if m else None
 
 
 def _edit_le1(a: str, b: str) -> bool:
@@ -119,6 +164,18 @@ def _edit_le1(a: str, b: str) -> bool:
     if len(a) != len(b):
         return False
     return sum(x != y for x, y in zip(a, b)) <= 1
+
+
+# Receipts are not written in one language. The corpus spans Indian (CGST/SGST), Indonesian
+# (Sub-Total, PB1, Jumlah, Tunai) and Malaysian/English (Total, GST, Service Charge)
+# conventions, and a label table covering only the first of those makes the arithmetic
+# layer silently inert on the other two.
+SUBTOTAL_WORDS = ("SUBTOTAL", "SUBTOTA", "JUMLAH")
+TOTAL_WORDS = ("TOTAL", "GRANDTOTAL", "TOTA")
+TAX_WORDS = ("PB1", "PPN", "PPH", "GST", "SST", "VAT", "TAX", "PAJAK")
+SERVICE_WORDS = ("SERVICE", "SERVIS", "SVC", "CHARGE")
+IGNORE_WORDS = ("CASH", "TUNAI", "CHANGE", "KEMBALI", "KEMBALIAN", "DEBIT", "CREDIT",
+                "TENDER", "PAYMENT", "BAYAR")
 
 
 def _label(line: str) -> str | None:
@@ -131,6 +188,18 @@ def _label(line: str) -> str | None:
     alpha = "".join(ch for ch in line if ch.isalpha()).upper()
     if not alpha:
         return None
+
+    # Payment/change lines carry large numbers that are not part of the bill arithmetic;
+    # mistaking "CASH 200,000" for a total corrupts every downstream check.
+    if any(w in alpha for w in IGNORE_WORDS):
+        return None
+    if any(w in alpha for w in SUBTOTAL_WORDS[1:]) or alpha.startswith("SUBTOTAL"):
+        return "subtotal"
+    if any(w in alpha for w in SERVICE_WORDS):
+        return "service"
+    if any(w in alpha for w in TAX_WORDS):
+        return "tax"
+
     head = alpha[:8]
     if head.startswith("SUB"):
         return "subtotal"
@@ -142,7 +211,7 @@ def _label(line: str) -> str | None:
         return "cgst"
     if len(head) >= 4 and head[0] == "S" and _edit_le1(head[1:4], "GST"):
         return "sgst"
-    if head.startswith("TOTAL") or _edit_le1(head[:5], "TOTAL"):
+    if head.startswith("TOTAL") or _edit_le1(head[:5], "TOTAL") or "TOTAL" in alpha:
         return "total"
     if "HSN" in alpha and "@" in line:
         return "item"
@@ -162,12 +231,15 @@ def arithmetic_features(ocr: OcrResult) -> dict[str, float]:
         "arith_items_vs_subtotal_rel": 0.0, "arith_components_vs_total_rel": 0.0,
         "arith_cgst_sgst_mismatch": 0.0, "arith_implied_gst": 0.0,
         "arith_gst_off_slab": 0.0, "arith_any_break": 0.0,
-        "arith_items_reliable": 1.0,
+        "arith_items_reliable": 1.0, "arith_has_service": 0.0,
+        "arith_uplift_ratio": 0.0, "arith_total_below_subtotal": 0.0,
+        "arith_uplift_implausible": 0.0,
     }
     if not ocr.text:
         return f
 
     subtotal = cgst = sgst = total = None
+    tax = service = None
     items: list[float] = []
 
     for raw in ocr.text.splitlines():
@@ -186,11 +258,27 @@ def arithmetic_features(ocr: OcrResult) -> dict[str, float]:
             cgst = v
         elif kind == "sgst":
             sgst = v
+        elif kind == "tax":
+            tax = v
+        elif kind == "service":
+            service = v
         elif kind == "total":
-            total = v
+            # Receipts print several "total"-ish lines; the bill total is the largest.
+            total = v if total is None else max(total, v)
 
-    have = sum(v is not None for v in (subtotal, cgst, sgst, total))
-    f["arith_parsed"] = have / 4.0
+    # Indian receipts split GST into CGST+SGST; Indonesian and Malaysian ones print a
+    # single tax line (PB1, PPN, GST) plus often a service charge. Normalise to one
+    # tax total so the reconciliation works in every convention the corpus contains.
+    tax_total = None
+    if cgst is not None or sgst is not None:
+        tax_total = (cgst or 0.0) + (sgst or 0.0)
+    elif tax is not None:
+        tax_total = tax
+
+    have = sum(v is not None for v in (subtotal, tax_total, total, service if service is not None else None))
+    have = sum(v is not None for v in (subtotal, tax_total, total))
+    f["arith_parsed"] = have / 3.0
+    f["arith_has_service"] = float(service is not None)
     f["arith_n_items"] = float(len(items))
 
     # Check 1: do the line items sum to the printed subtotal?
@@ -209,18 +297,40 @@ def arithmetic_features(ocr: OcrResult) -> dict[str, float]:
         if len(keep):
             f["arith_items_vs_subtotal_rel"] = float(min(abs(keep.sum() - subtotal) / subtotal, 5.0))
 
-    # Check 2: does subtotal + tax equal the printed total? This is the check that catches
-    # a generated receipt whose headline total was pinned to the disputed amount.
-    if subtotal and cgst is not None and sgst is not None and total and total > 0:
-        f["arith_components_vs_total_rel"] = abs((subtotal + cgst + sgst) - total) / total
+    # Check 2: does subtotal + tax + service equal the printed total?
+    #
+    # The service charge is not optional book-keeping. Measured on real CORD receipts,
+    # omitting it produced apparent 4-6% "errors" on perfectly genuine restaurant bills,
+    # which at a 1% tolerance would have condemned most of them.
+    if subtotal and tax_total is not None and total and total > 0:
+        expected = subtotal + tax_total + (service or 0.0)
+        f["arith_components_vs_total_rel"] = abs(expected - total) / total
+
+    # Check 2b: the ORDER-OF-MAGNITUDE check, which needs no tax line at all.
+    #
+    # Exact reconciliation only works when every component parses, and on real receipts
+    # that is the minority case -- plenty of them have no separate tax line, and OCR drops
+    # others. But two things hold on every genuine receipt regardless of layout or
+    # language: the total is never LESS than the subtotal (tax and service only add), and
+    # the uplift over the subtotal cannot exceed a plausible tax-plus-service ceiling.
+    #
+    # This turns out to be the strongest available signal against a tampered total,
+    # because a transplanted figure lands at an arbitrary magnitude -- a copy-move that
+    # replaces 1,591,600 with a 36,000 lifted from a line item leaves a total far below
+    # its own subtotal, which no genuine receipt can do.
+    if subtotal and total and subtotal > 0 and total > 0:
+        uplift = (total - subtotal) / subtotal
+        f["arith_uplift_ratio"] = float(np.clip(uplift, -5.0, 20.0))
+        f["arith_total_below_subtotal"] = float(uplift < -0.005)
+        f["arith_uplift_implausible"] = float(uplift < -0.005 or uplift > MAX_UPLIFT)
 
     # Check 3: CGST and SGST are equal halves of GST by law. Any gap is an error.
     if cgst is not None and sgst is not None and max(cgst, sgst) > 0:
         f["arith_cgst_sgst_mismatch"] = abs(cgst - sgst) / max(cgst, sgst)
 
     # Check 4: is the implied tax rate a legal slab (or a blend of slabs)?
-    if subtotal and subtotal > 0 and cgst is not None and sgst is not None:
-        rate = (cgst + sgst) / subtotal * 100.0
+    if subtotal and subtotal > 0 and tax_total is not None:
+        rate = tax_total / subtotal * 100.0
         f["arith_implied_gst"] = rate
         if 0.0 <= rate <= 28.5:
             # A mixed basket blends slabs, so anything between the lowest and highest slab
@@ -237,6 +347,7 @@ def arithmetic_features(ocr: OcrResult) -> dict[str, float]:
         f["arith_components_vs_total_rel"] > 0.01
         or f["arith_cgst_sgst_mismatch"] > 0.05
         or f["arith_gst_off_slab"] > 1.5
+        or f["arith_uplift_implausible"] > 0
     )
     return f
 

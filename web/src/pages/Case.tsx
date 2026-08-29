@@ -90,7 +90,7 @@ export default function Case() {
   return (
     <>
       <div className="page-head">
-        <Link to="/disputes" className="dimmer mono" style={{ fontSize: 11 }}>← queue</Link>
+        <Link to="/console/disputes" className="dimmer mono" style={{ fontSize: 11 }}>← queue</Link>
         <h2 style={{ marginTop: 6 }}>
           <span className="mono">{c.dispute_id}</span>{" "}
           <span className="dim" style={{ fontWeight: 400, fontSize: 15 }}>

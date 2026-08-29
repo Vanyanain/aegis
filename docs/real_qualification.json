@@ -1,0 +1,62 @@
+{
+  "n_transactions": 590540,
+  "n_chargebacks": 20663,
+  "n_assessable": 6244,
+  "qualified": 3,
+  "qualified_rate": 0.0004804612427930814,
+  "naive_qualified_rate": 0.008327994875080076,
+  "naive_false_positives": 49,
+  "naive_false_positive_inr": 546515.2,
+  "defensible_inr": 9038.304,
+  "undefendable_inr": 87028680.63999999,
+  "funnel": {
+    "assessable": 6244,
+    "cleared_prior_gate": 146,
+    "qualified": 3,
+    "blocked_no_main_anchor": 49
+  },
+  "blocking_gaps": {
+    "INSUFFICIENT_ELIGIBLE_PRIORS": 5165,
+    "NO_PRIOR_HISTORY": 933,
+    "ELEMENTS_INSUFFICIENT": 84,
+    "NO_MAIN_ANCHOR": 49,
+    "NO_ELEMENTS_CAPTURED": 7,
+    "MAIN_WITHOUT_PARTNER": 3
+  },
+  "capture_coverage": {
+    "device_fingerprint": 0.2380685474311647,
+    "device_id": 0.23851898262607105,
+    "purchase_ip": 0.0,
+    "customer_email": 0.8400514783079893,
+    "shipping_address": 0.8887357333965523,
+    "customer_account_id": 0.0
+  },
+  "constraints": {
+    "purchase_ip": "anonymised by the data provider; the 2-Main path is unassessable",
+    "account_id": "no merchant-side account identifier in this dataset",
+    "span_days": 182,
+    "note": "Both constraints push the measured qualification rate BELOW reality."
+  },
+  "sensitivity": {
+    "120": {
+      "qualified": 3,
+      "rate": 0.0004804612427930814
+    },
+    "90": {
+      "qualified": 11,
+      "rate": 0.0017616912235746316
+    },
+    "60": {
+      "qualified": 13,
+      "rate": 0.002081998718770019
+    },
+    "30": {
+      "qualified": 16,
+      "rate": 0.0025624599615631004
+    },
+    "14": {
+      "qualified": 24,
+      "rate": 0.003843689942344651
+    }
+  }
+}

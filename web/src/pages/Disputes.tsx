@@ -67,7 +67,7 @@ export default function Disputes() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.dispute_id} className="click" onClick={() => nav(`/disputes/${r.dispute_id}`)}>
+                <tr key={r.dispute_id} className="click" onClick={() => nav(`/console/disputes/${r.dispute_id}`)}>
                   <td>
                     <span className="mono" style={{ fontSize: 11.5 }}>{r.dispute_id}</span>
                     <div className="dimmer" style={{ fontSize: 10 }}>{r.dispute_date} · {r.category}</div>

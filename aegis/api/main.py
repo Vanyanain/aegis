@@ -244,6 +244,259 @@ def costlab(econ_in: EconomicsIn) -> dict[str, Any]:
     return out
 
 
+# --- INTEGRATIONS -------------------------------------------------------------------
+#
+# All three degrade to a documented "not configured" state rather than faking data. The
+# retriever is built lazily because loading the sentence-transformer costs ~13s and would
+# otherwise be paid on every cold start even by requests that never ask a question.
+
+_RETRIEVER = None
+
+
+def _retriever():
+    global _RETRIEVER
+    if _RETRIEVER is None:
+        from aegis.rag.retriever import RuleRetriever
+
+        # The container ships without sentence-transformers (see requirements.txt for why),
+        # so semantic retrieval is opt-in via env rather than attempted-and-caught: a 2 GB
+        # import failing silently on every cold start is not a good default.
+        _RETRIEVER = RuleRetriever(
+            use_semantic=os.environ.get("AEGIS_SEMANTIC_RAG", "").lower() in ("1", "true")
+        )
+    return _RETRIEVER
+
+
+@app.get("/api/integrations")
+def integrations() -> dict[str, Any]:
+    """What is wired up, without ever echoing a credential."""
+    from aegis.integrations import stripe_sync, supabase_store
+
+    return {
+        "stripe": stripe_sync.status(),
+        "supabase": supabase_store.status(),
+        "rag": {
+            "configured": True,
+            "corpus_passages": len(_rag_corpus()),
+            "backend": _retriever().backend,
+            "note": "Local retrieval. No external API and no model-generated prose.",
+        },
+        "setup": {
+            "stripe": "Set STRIPE_SECRET_KEY (restricted, read-only: disputes + charges).",
+            "supabase": "Set SUPABASE_URL and SUPABASE_KEY (anon key, RLS enabled).",
+        },
+    }
+
+
+def _rag_corpus():
+    from aegis.rag.corpus import CORPUS
+
+    return CORPUS
+
+
+class AskIn(BaseModel):
+    question: str = Field(..., min_length=3, max_length=400)
+    dispute_id: str | None = None
+
+
+@app.post("/api/ask")
+def ask(body: AskIn) -> dict[str, Any]:
+    """Answer a rulebook question, grounded in citations and this case's computed facts."""
+    from aegis.rag.retriever import answer
+
+    case = None
+    if body.dispute_id:
+        s = get_store()
+        if s.has_dispute(body.dispute_id):
+            case = s.case(body.dispute_id)
+    return answer(body.question, _retriever(), case)
+
+
+@app.get("/api/ask/suggestions")
+def ask_suggestions() -> dict[str, Any]:
+    from aegis.rag.retriever import SUGGESTED_QUESTIONS
+
+    return {"questions": SUGGESTED_QUESTIONS,
+            "corpus": [{"id": p.id, "topic": p.topic, "source": p.source}
+                       for p in _rag_corpus()]}
+
+
+@app.get("/api/stripe/disputes")
+def stripe_disputes(limit: int = Query(20, ge=1, le=100)) -> dict[str, Any]:
+    """Live disputes from Stripe, with Stripe's own CE 3.0 verdict attached."""
+    from aegis.integrations import stripe_sync
+
+    if not stripe_sync.is_configured():
+        raise HTTPException(
+            400,
+            "Stripe is not configured. Set STRIPE_SECRET_KEY (restricted, read-only) to "
+            "pull live disputes and compare Stripe's CE 3.0 verdict against the rulebook.",
+        )
+    try:
+        items = [d.as_dict() for d in stripe_sync.fetch_disputes(limit)]
+    except Exception as e:
+        raise HTTPException(502, f"Stripe API error: {type(e).__name__}: {str(e)[:200]}")
+    return {"items": items, "count": len(items), "status": stripe_sync.status()}
+
+
+@app.get("/api/stripe/disputes/{dispute_id}/compare")
+def stripe_compare(dispute_id: str) -> dict[str, Any]:
+    """Run the AEGIS rulebook over a Stripe dispute and set it against Stripe's verdict.
+
+    Disagreement is the informative case: Stripe assesses the SUBMISSION, AEGIS assesses
+    whether the case was ever winnable and which field decided it.
+    """
+    from aegis.integrations import stripe_sync
+    from rules import registry as reg
+
+    if not stripe_sync.is_configured():
+        raise HTTPException(400, "Stripe is not configured.")
+    try:
+        disputes = stripe_sync.fetch_disputes(100)
+        d = next((x for x in disputes if x.dispute_id == dispute_id), None)
+        if d is None:
+            raise HTTPException(404, f"dispute {dispute_id} not found on this Stripe account")
+
+        stripe = stripe_sync._client()
+        charge = stripe.Charge.retrieve(d.charge_id) if d.charge_id else None
+        customer = charge.get("customer") if charge else None
+        history = stripe_sync.charge_history(customer, d.charge_id)
+
+        disputed = next((h for h in history if h["txn_id"] == d.charge_id), None)
+        if disputed is None and charge is not None:
+            disputed = {"txn_id": d.charge_id, "ts": d.created, "status": "paid",
+                        "disputed": False, "tc40_reported": False,
+                        "is_validation_charge": False,
+                        "product_description": charge.get("description"),
+                        "merchandise_or_services": None, "purchase_ip": None,
+                        "device_fingerprint": None, "device_id": None,
+                        "customer_email": charge.get("receipt_email"),
+                        "customer_account_id": customer, "shipping_address": None,
+                        "card_token": customer}
+        ce3 = reg.ce3()
+        q = ce3.qualify(disputed or {}, [h for h in history if h["txn_id"] != d.charge_id],
+                        reason_code=d.network_reason_code or "10.4")
+        aegis = q.as_dict()
+        return {
+            "stripe_dispute": d.as_dict(),
+            "aegis": aegis,
+            "comparison": stripe_sync.compare(aegis, d),
+            "prior_charges_seen": len(history),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(502, f"Stripe API error: {type(e).__name__}: {str(e)[:200]}")
+
+
+@app.get("/api/supabase/schema")
+def supabase_schema() -> dict[str, Any]:
+    """The SQL to run once, so the operator never has to guess the schema."""
+    from aegis.integrations import supabase_store
+
+    return {"sql": supabase_store.schema_sql(), "status": supabase_store.status()}
+
+
+class ReviewIn(BaseModel):
+    dispute_id: str
+    decision: str = Field(..., max_length=40)
+    analyst: str = Field("analyst", max_length=80)
+    note: str = Field("", max_length=2000)
+
+
+@app.post("/api/review")
+def record_review(body: ReviewIn) -> dict[str, Any]:
+    """Record the decision a human actually made.
+
+    This closes the loop the model card lists as future work: without the analyst's decision
+    next to the recommendation, the system can never learn whether its advice was any good.
+    """
+    from aegis.integrations.supabase_store import SupabaseStore
+
+    store = SupabaseStore()
+    entry = LOG.append("analyst_review", body.dispute_id, {
+        "decision": body.decision, "analyst": body.analyst, "note": body.note,
+    })
+    persisted = store.record_review(body.dispute_id, body.decision, body.analyst, body.note)
+    return {
+        "recorded": True,
+        "persisted_to_supabase": persisted,
+        "log_entry": {"seq": entry.seq, "entry_hash": entry.entry_hash},
+        "note": None if persisted else (
+            "Supabase is not configured, so this decision is in the in-memory chain only "
+            "and will not survive a restart."
+        ),
+    }
+
+
+# --- REAL-DATA surfaces -------------------------------------------------------------
+#
+# These read results computed offline over IEEE-CIS (590,540 real transactions, 20,663 real
+# reported chargebacks) and real receipt photographs from CORD and SROIE. They are served
+# from cached JSON rather than recomputed per request: the CE 3.0 gate over the full ledger
+# takes minutes, and the answer does not change between requests.
+
+
+def _load_json(name: str) -> dict[str, Any] | None:
+    import json
+
+    p = DOCS / name
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@app.get("/api/real/qualification")
+def real_qualification() -> dict[str, Any]:
+    """Visa's CE 3.0 gate applied unmodified to real chargebacks."""
+    d = _load_json("real_qualification.json")
+    if not d:
+        raise HTTPException(404, "real qualification analysis not built")
+    return d
+
+
+@app.get("/api/real/rings")
+def real_rings() -> dict[str, Any]:
+    """Abuse rings found by shared device fingerprint in the real ledger."""
+    d = _load_json("rings.json")
+    if not d:
+        raise HTTPException(404, "ring analysis not built")
+    return d
+
+
+@app.get("/api/real/metrics")
+def real_metrics() -> dict[str, Any]:
+    """Every metric computed on real data, in one payload."""
+    out: dict[str, Any] = {}
+    for key, fn in [
+        ("qualification", "real_qualification.json"),
+        ("side_a", "metrics_real_sidea.json"),
+        ("side_b", "metrics_real_sideb.json"),
+        ("vision", "metrics_vision.json"),
+        ("adversarial", "metrics_adversarial.json"),
+        ("rings", "rings.json"),
+    ]:
+        d = _load_json(fn)
+        if d is not None:
+            out[key] = d
+    out["datasets"] = {
+        "transactions": {
+            "name": "IEEE-CIS Fraud Detection (Vesta Corporation)",
+            "n": 590540,
+            "label": "isFraud - defined by the provider as a reported chargeback on the card",
+            "note": "590,540 real card-not-present transactions, 394 columns, 182-day span.",
+        },
+        "receipts": {
+            "name": "CORD (Naver Clova) + SROIE (ICDAR 2019 Robust Reading Challenge)",
+            "n": 1973,
+            "note": (
+                "Real receipt photographs. Manipulations applied programmatically to real "
+                "annotated regions, the same methodology as DocTamper (CVPR 2023) and "
+                "AIForge-Doc (2026)."
+            ),
+        },
+    }
+    return out
+
+
 @app.get("/api/metrics")
 def metrics() -> dict[str, Any]:
     import json

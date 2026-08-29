@@ -13,3 +13,14 @@ joblib==1.4.2
 Pillow==10.4.0
 pytesseract==0.3.13
 google-cloud-firestore==2.19.0
+stripe==15.5.1
+supabase==2.10.0
+
+# NOT installed in the container, deliberately: sentence-transformers pulls in torch, which
+# is ~2 GB and -- more importantly -- links a different OpenMP runtime than LightGBM in this
+# stack, which segfaults the interpreter when a booster loads in a torch-initialised process
+# (hit exactly that during development). The retriever detects its absence and falls back to
+# lexical TF-IDF, reporting `backend: "lexical (tf-idf only)"` in the UI rather than
+# pretending to be running embeddings. Retrieval quality drops on paraphrased questions;
+# citations and grounding are unaffected.
+#   sentence-transformers==6.0.0

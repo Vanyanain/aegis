@@ -1,0 +1,112 @@
+{
+  "temporal": {
+    "split": "temporal",
+    "n": 94636,
+    "base_rate": 0.03468024853121434,
+    "pr_auc": 0.4751647579299821,
+    "lift_over_base": 13.701307748769585,
+    "roc_auc": 0.8825431746538838,
+    "brier": 0.023275875022407907,
+    "best_f1": {
+      "f1": 0.49890369370888854,
+      "precision": 0.5587457499055535,
+      "recall": 0.4506398537477148,
+      "threshold": 0.23225806451612904
+    },
+    "at_precision_50": {
+      "precision": 0.5521335807050093,
+      "recall": 0.453382084095064
+    }
+  },
+  "n_features": 50,
+  "protocol": {
+    "train_end_day": 120,
+    "gap_end_day": 150,
+    "test_end_day": 182
+  },
+  "without_ce3_features": {
+    "split": "temporal_without_ce3_features",
+    "n": 94636,
+    "base_rate": 0.03468024853121434,
+    "pr_auc": 0.48934375682426107,
+    "lift_over_base": 14.110157151377443,
+    "roc_auc": 0.8836287171278461,
+    "brier": 0.023164633200202893,
+    "best_f1": {
+      "f1": 0.49736564805057953,
+      "precision": 0.5870646766169154,
+      "recall": 0.43144424131627057,
+      "threshold": 0.2576898991103666
+    },
+    "at_precision_50": {
+      "precision": 0.5,
+      "recall": 0.4692260816575259
+    }
+  },
+  "random_split": {
+    "split": "random",
+    "n": 117827,
+    "base_rate": 0.03557758408514178,
+    "pr_auc": 0.7031685908059083,
+    "lift_over_base": 19.76437155269269,
+    "roc_auc": 0.9381944232185748,
+    "brier": 0.017178442538891545,
+    "best_f1": {
+      "f1": 0.6698062432723358,
+      "precision": 0.7682098765432098,
+      "recall": 0.59375,
+      "threshold": 0.24439790050283738
+    },
+    "at_precision_50": {
+      "precision": 0.5,
+      "recall": 0.7194656488549618
+    }
+  },
+  "drift_cost_pr_auc": 0.22800383287592624,
+  "contaminated_reference": {
+    "split": "temporal_with_leaky_prior_dispute",
+    "n": 94636,
+    "base_rate": 0.03468024853121434,
+    "pr_auc": 0.8472681033246493,
+    "lift_over_base": 24.43085442603032,
+    "roc_auc": 0.9792535551910837,
+    "brier": 0.010763130888281477,
+    "best_f1": {
+      "f1": 0.7973791973791974,
+      "precision": 0.8622033297910024,
+      "recall": 0.7416209628275442,
+      "threshold": 0.4133216319635056
+    },
+    "at_precision_50": {
+      "precision": 0.5,
+      "recall": 0.8729433272394881
+    }
+  },
+  "feature_importance": {
+    "TransactionAmt": 3719,
+    "D4": 2683,
+    "D15": 2659,
+    "customer_email": 2418,
+    "D2": 2285,
+    "C13": 2280,
+    "dist1": 2223,
+    "D10": 2183,
+    "C1": 1760,
+    "id_20": 1756,
+    "C2": 1616,
+    "D1": 1476,
+    "cust_amt_ratio": 1452,
+    "V310": 1434,
+    "id_19": 1363,
+    "id_02": 1232,
+    "C14": 1148,
+    "id_13": 1073,
+    "cust_tenure_days": 1061,
+    "V307": 958,
+    "C5": 837,
+    "D3": 811,
+    "cust_txn_count": 792,
+    "id_01": 788,
+    "V308": 745
+  }
+}

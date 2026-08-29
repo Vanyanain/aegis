@@ -24,3 +24,8 @@ data/evidence_scored.parquet
 web/node_modules/
 web/dist/
 notebooks/
+
+# Real receipt corpus: 717 MB of full-resolution photographs, training input only.
+data/evidence_real/
+data/real/
+data/evidence_real_features.parquet
