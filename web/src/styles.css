@@ -71,6 +71,9 @@
   --petal-3: #f9aec5;
 
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* An editorial serif for headings. Inter everywhere reads as a dashboard; a serif
+     headline over a sans body is what makes a page feel written rather than generated. */
+  --serif: "Newsreader", "Iowan Old Style", Palatino, Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --r: 10px;
@@ -941,3 +944,97 @@ html.fx-ready [data-reveal] { opacity: 0; }
 /* The closing scene is shorter than the narrative ones: it is a call to action, not a
    chapter, and a full 92vh of sky before the footer reads as the page having stalled. */
 .scene-final { min-height: 74vh; }
+
+
+/* ============================================================================
+ * Section rhythm.
+ *
+ * Every section below the hero uses the same three-part opening: a small
+ * uppercase eyebrow, a serif headline, one line of sub. The page felt messy
+ * because each section invented its own shape -- different heading sizes,
+ * different spacing, cards in some and bare prose in others. One rhythm,
+ * repeated, is what reads as designed.
+ * ==========================================================================*/
+
+.sec { padding: 118px 0; position: relative; }
+.sec + .sec { padding-top: 0; }
+.sec-tint { background: var(--canvas); padding: 118px 0; }
+
+.sec-head { max-width: 760px; margin-bottom: 52px; }
+.sec-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+
+.eyebrow {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--indigo); margin-bottom: 18px;
+}
+.eyebrow-inv { color: var(--petal-2); }
+
+.sec-h {
+  font-family: var(--serif);
+  font-size: clamp(30px, 4vw, 50px);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.sec-h-inv { color: #fff; }
+.sec-sub {
+  font-size: 16.5px; line-height: 1.65; color: var(--ink-2);
+  margin-top: 18px; max-width: 62ch;
+}
+.sec-head.center .sec-sub { margin-left: auto; margin-right: auto; }
+.sec-sub-inv { color: #c9b3bd; }
+
+/* Serif for the scene headlines and the hero headline too, so the voice is
+   consistent from the first screen to the last. */
+.scene-h, .lp-h1, .sh-label.is-headline { font-family: var(--serif); font-weight: 500; }
+.lp-h2 { font-family: var(--serif); font-weight: 500; }
+
+/* --- numbered step tour ------------------------------------------------- */
+
+.tour { display: grid; grid-template-columns: 268px 1fr; gap: 26px; align-items: start; }
+@media (max-width: 1000px) { .tour { grid-template-columns: 1fr; } }
+
+.tour-steps { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 1000px) {
+  .tour-steps { flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
+}
+.tour-step {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left;
+  padding: 13px 15px; border-radius: 10px; border: 1px solid transparent;
+  color: var(--ink-2); transition: background .16s, border-color .16s, color .16s;
+  white-space: normal;
+}
+.tour-step:hover { background: var(--surface-3); color: var(--ink); }
+.tour-step.on {
+  background: var(--surface); border-color: var(--line);
+  color: var(--ink); box-shadow: var(--shadow);
+}
+.tour-n {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; flex: none;
+  width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-3); color: var(--ink-3); margin-top: 1px;
+}
+.tour-step.on .tour-n { background: var(--indigo); color: #fff; }
+.tour-label { font-size: 13.5px; font-weight: 550; line-height: 1.35; }
+.tour-blurb { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; line-height: 1.45; }
+.tour-step.on .tour-blurb { color: var(--ink-2); }
+
+/* --- evaluation stat row ------------------------------------------------ */
+
+.evals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 44px; }
+@media (max-width: 820px) { .evals { grid-template-columns: 1fr; gap: 24px; } }
+.eval-n {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: clamp(40px, 5.4vw, 62px); font-weight: 600; letter-spacing: -0.04em;
+  line-height: 1; color: var(--ink);
+}
+.eval-n-inv { color: #fff; }
+.eval-l { font-size: 14px; color: var(--ink-3); margin-top: 12px; line-height: 1.45; }
+.eval-l-inv { color: #a08b96; }
+.eval-note {
+  font-size: 13px; color: var(--ink-3); margin-top: 40px;
+  padding-top: 20px; border-top: 1px solid var(--line);
+}
+.eval-note-inv { color: #a08b96; border-top-color: #4d3740; }
