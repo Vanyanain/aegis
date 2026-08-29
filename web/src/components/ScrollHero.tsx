@@ -152,8 +152,13 @@ export default function ScrollHero() {
       setReady(true);
       const duration = v.duration || 0;
 
-      // Hand sequencing over to JS only once the trigger is genuinely about to exist.
-      container.classList.add("is-live");
+      // Hand sequencing over to JS only after a frame has actually rendered.
+      //
+      // Adding this class hides every scene and makes the fade-ins responsible for showing
+      // one. In a backgrounded tab requestAnimationFrame never fires, so those fades never
+      // run and the hero renders as an empty rectangle. Waiting for a real frame means the
+      // CSS default -- first scene visible -- survives wherever animation cannot run.
+      requestAnimationFrame(() => container.classList.add("is-live"));
 
       // Reset the active index HERE, not only in cleanup. This effect rebuilds when the
       // live figures arrive; if the index still reads 0 from the previous build, the first

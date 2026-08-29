@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { get } from "../api";
 import ScrollHero from "../components/ScrollHero";
+import ScrollFX from "../components/ScrollFX";
 
 /* The marketing page, built on Mercury's section rhythm: a tall hero with a moving product
  * shot, then alternating feature bands, a statistics band, and a closing call to action over
@@ -35,32 +36,6 @@ const SCREENS = [
 
 const DWELL_MS = 6500;
 
-/* Petal positions and timings are fixed rather than random so the drift is identical on
- * every render. Randomising them re-seeds on each React re-render, which makes the whole
- * field visibly jump every time the demo tab advances. */
-const PETALS = [
-  { l: "4%", d: 13, delay: 0 },   { l: "12%", d: 17, delay: 3.5 },
-  { l: "21%", d: 11, delay: 6 },  { l: "29%", d: 19, delay: 1.5 },
-  { l: "38%", d: 14, delay: 8 },  { l: "47%", d: 16, delay: 4.5 },
-  { l: "56%", d: 12, delay: 10 }, { l: "64%", d: 18, delay: 2 },
-  { l: "73%", d: 15, delay: 7 },  { l: "81%", d: 13, delay: 11 },
-  { l: "89%", d: 20, delay: 5 },  { l: "95%", d: 12, delay: 9 },
-];
-
-function Petals() {
-  return (
-    <div className="petals" aria-hidden="true">
-      {PETALS.map((p, i) => (
-        <span
-          key={i}
-          className="petal"
-          style={{ left: p.l, animationDuration: `${p.d}s`, animationDelay: `${p.delay}s` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function Landing() {
   const [q, setQ] = useState<Qual | null>(null);
   const [rings, setRings] = useState<Rings | null>(null);
@@ -91,6 +66,8 @@ export default function Landing() {
 
   return (
     <div className="lp">
+      <ScrollFX />
+
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-inner">
           <div className="lp-logo">AEGIS</div>
@@ -108,9 +85,8 @@ export default function Landing() {
 
       {/* ---------------- live product frame ---------------- */}
       <section className="lp-hero lp-hero-compact">
-        <Petals />
         <div className="lp-wrap">
-          <div className="lp-demo-intro">
+          <div className="lp-demo-intro" data-reveal="rise">
             <h2 className="lp-h2" style={{ margin: "0 auto" }}>And here is the tool that found it.</h2>
             <p className="lp-lede" style={{ margin: "14px auto 0" }}>
               Not a screen recording — the running application, cycling its own screens.
@@ -120,7 +96,7 @@ export default function Landing() {
 
         {/* ---------------- live product frame ---------------- */}
         <div className="lp-wrap">
-          <div className="lp-demo">
+          <div className="lp-demo" data-reveal="tilt">
             <div className="lp-demo-chrome">
               <span className="lp-dot" /><span className="lp-dot" /><span className="lp-dot" />
               <div className="lp-urlbar">
@@ -166,9 +142,9 @@ export default function Landing() {
       {/* ---------------- the problem ---------------- */}
       <section className="lp-band" id="problem">
         <div className="lp-wrap">
-          <h2 className="lp-h2">Two things are true, and nobody has connected them.</h2>
+          <h2 className="lp-h2" data-reveal="rise">Two things are true, and nobody has connected them.</h2>
           <div className="lp-two">
-            <article className="lp-story">
+            <article className="lp-story" data-reveal="tilt">
               <div className="lp-num">01</div>
               <h3>The only rule that wins is decided before the fight.</h3>
               <p>
@@ -178,7 +154,7 @@ export default function Landing() {
                 fingerprint. By then it is four months too late to fix.
               </p>
             </article>
-            <article className="lp-story">
+            <article className="lp-story" data-reveal="tilt">
               <div className="lp-num">02</div>
               <h3>The evidence layer itself is now under attack.</h3>
               <p>
@@ -188,7 +164,7 @@ export default function Landing() {
               </p>
             </article>
           </div>
-          <div className="lp-quote">
+          <div className="lp-quote" data-reveal="swing">
             <p>
               A <strong>recycled receipt</strong> — genuine, unaltered, from a different real
               order — is forensically perfect. No pixel-level method will ever flag it. AEGIS
@@ -203,14 +179,14 @@ export default function Landing() {
       {/* ---------------- numbers ---------------- */}
       <section className="lp-band lp-band-tint" id="numbers">
         <div className="lp-wrap">
-          <h2 className="lp-h2">We ran Visa's actual gate over real chargebacks.</h2>
+          <h2 className="lp-h2" data-reveal="rise">We ran Visa's actual gate over real chargebacks.</h2>
           <p className="lp-lede">
             Not a simulation. 590,540 real card-not-present transactions from IEEE-CIS, whose
             fraud label the data provider defines as a reported chargeback.
           </p>
 
           {q ? (
-            <div className="lp-funnel">
+            <div className="lp-funnel" data-reveal="rise">
               {[
                 { n: q.n_chargebacks.toLocaleString("en-US"), l: "real chargebacks" },
                 { n: q.n_assessable.toLocaleString("en-US"), l: "assessable" },
@@ -229,7 +205,7 @@ export default function Landing() {
           )}
 
           {q && (
-            <div className="lp-callout">
+            <div className="lp-callout" data-reveal="swing">
               <strong>
                 {q.funnel.blocked_no_main_anchor} of the {q.funnel.cleared_prior_gate} cases that
                 clear the history gate fail for one reason: no IP or device was ever captured.
@@ -241,15 +217,15 @@ export default function Landing() {
           )}
 
           <div className="lp-three">
-            <div className="lp-stat">
+            <div className="lp-stat" data-reveal="rise">
               <div className="lp-stat-n">{sideb ? `${(sideb.held_out.precision * 100).toFixed(0)}%` : "—"}</div>
               <div className="lp-stat-l">forensic precision on real receipt photographs</div>
             </div>
-            <div className="lp-stat">
+            <div className="lp-stat" data-reveal="rise">
               <div className="lp-stat-n">{rings ? `${rings.lift.toFixed(1)}×` : "—"}</div>
               <div className="lp-stat-l">chargeback lift inside device-linked abuse rings</div>
             </div>
-            <div className="lp-stat">
+            <div className="lp-stat" data-reveal="rise">
               <div className="lp-stat-n">21</div>
               <div className="lp-stat-l">cited rulebook passages behind every answer</div>
             </div>
@@ -260,9 +236,9 @@ export default function Landing() {
       {/* ---------------- the two sides ---------------- */}
       <section className="lp-band" id="evidence">
         <div className="lp-wrap">
-          <h2 className="lp-h2">Both directions of the evidence war.</h2>
+          <h2 className="lp-h2" data-reveal="rise">Both directions of the evidence war.</h2>
           <div className="lp-two">
-            <article className="lp-side">
+            <article className="lp-side" data-reveal="swing">
               <span className="lp-side-badge">Side A</span>
               <h3>Can we defend this?</h3>
               <p>
@@ -276,7 +252,7 @@ export default function Landing() {
                 <li>Calibrated win probability and per-case break-even</li>
               </ul>
             </article>
-            <article className="lp-side">
+            <article className="lp-side" data-reveal="tilt">
               <span className="lp-side-badge alt">Side B</span>
               <h3>Is their evidence real?</h3>
               <p>
@@ -297,13 +273,13 @@ export default function Landing() {
       {/* ---------------- method / honesty ---------------- */}
       <section className="lp-band lp-band-dark" id="honesty">
         <div className="lp-wrap">
-          <h2 className="lp-h2 lp-h2-inv">We publish the results that disappoint us.</h2>
+          <h2 className="lp-h2 lp-h2-inv" data-reveal="rise">We publish the results that disappoint us.</h2>
           <p className="lp-lede lp-lede-inv">
             A model that only reports its wins is a marketing artefact. These are in the console,
             on the Metrics page, permanently.
           </p>
           <div className="lp-three lp-three-inv">
-            <div className="lp-honest">
+            <div className="lp-honest" data-reveal="tilt">
               <h4>Forensics is worse on real photos</h4>
               <p>
                 {sideb ? `${(sideb.held_out.recall * 100).toFixed(1)}%` : "49.4%"} recall on real
@@ -311,14 +287,14 @@ export default function Landing() {
                 fakes. Real manipulations carry no arithmetic tell.
               </p>
             </div>
-            <div className="lp-honest">
+            <div className="lp-honest" data-reveal="tilt">
               <h4>We found our own leak</h4>
               <p>
                 A prior-chargeback feature lifted PR-AUC to 0.847. Vesta propagates fraud labels
                 across an account, so it restated the answer. Removed; the honest number is 0.475.
               </p>
             </div>
-            <div className="lp-honest">
+            <div className="lp-honest" data-reveal="tilt">
               <h4>Time costs accuracy</h4>
               <p>
                 A random split reports 0.703. The same model scores 0.475 predicting forward in
@@ -332,7 +308,7 @@ export default function Landing() {
       {/* ---------------- final CTA ---------------- */}
       <section className="lp-final">
         <div className="lp-wrap">
-          <h2 className="lp-h2">See which of your disputes are actually defensible.</h2>
+          <h2 className="lp-h2" data-reveal="rise">See which of your disputes are actually defensible.</h2>
           <p className="lp-lede">
             The console runs on public data out of the box. Connect Stripe with a read-only key
             to check its native CE 3.0 verdict against the rulebook on your own disputes.
