@@ -680,3 +680,174 @@ details summary::-webkit-details-marker { color: var(--ink-4); }
   .petals { display: none; }
   .lp-progress { animation: none; transform: scaleX(1); }
 }
+
+/* ============================================================================
+ * Scroll-scrubbed cinematic hero.
+ *
+ * Layered like a compositing stack, back to front: the scrub video, a petal
+ * overlay on `screen` (only the bright drifting petals survive the blend), a
+ * warm plum grade, a vignette, then the type. Everything decorative is
+ * pointer-events:none so nothing between the viewer and the buttons.
+ *
+ * The numbers sit on `perspective` with `preserve-3d` so GSAP can move them
+ * along Z. Without a perspective ancestor a translateZ does nothing at all --
+ * the single most common reason a "3D" web animation renders flat.
+ * ==========================================================================*/
+
+.sh {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: #1a1016;
+  display: grid;
+  place-items: center;
+}
+
+.sh-media { position: absolute; inset: 0; pointer-events: none; }
+
+.sh-video, .sh-overlay-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  will-change: filter, transform;
+}
+.sh-video { transform-origin: 50% 45%; }
+
+.sh-overlay-video {
+  opacity: 0;
+  /* Screen keeps the bright falling petals and drops the dark gate behind them. */
+  mix-blend-mode: screen;
+  filter: contrast(1.15) saturate(.55);
+}
+
+/* Warm plum grade so the footage belongs to the sakura palette rather than sitting
+   next to it as a stock clip. */
+.sh-grade {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 30%, rgba(194, 69, 111, .16) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(26, 16, 22, .34) 0%, rgba(26, 16, 22, .12) 38%, rgba(26, 16, 22, .72) 100%);
+  mix-blend-mode: multiply;
+}
+.sh-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(78% 68% at 50% 48%, transparent 42%, rgba(20, 10, 16, .78) 100%);
+}
+
+.sh-scenes {
+  position: relative; z-index: 2;
+  width: min(1040px, 90vw);
+  text-align: center;
+  /* The perspective ancestor. Remove it and the Z-motion below silently flattens. */
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+.sh-scene {
+  grid-area: 1 / 1;
+  position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  transform-style: preserve-3d;
+}
+/* No-pin fallback. Driven by a class the component sets from the same media queries it
+   uses for its own branch, so layout and behaviour cannot disagree -- a bare media query
+   here would un-stack the scenes at widths where JS was still running the pinned scrub. */
+.sh.is-simple { height: auto; padding: 96px 0; }
+.sh.is-simple .sh-scene {
+  position: relative; top: auto; transform: none; margin-bottom: 72px;
+}
+.sh.is-simple .sh-overlay-video { display: none; }
+.sh.is-simple .sh-media { position: absolute; }
+
+.sh-kicker {
+  font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--petal-2); margin-bottom: 26px;
+}
+
+.sh-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(72px, 13vw, 168px);
+  font-weight: 700;
+  line-height: .92;
+  letter-spacing: -0.05em;
+  color: #fff;
+  text-shadow: 0 4px 60px rgba(0, 0, 0, .55), 0 0 100px rgba(249, 174, 197, .28);
+  transform-style: preserve-3d;
+  will-change: transform, opacity, filter;
+}
+.sh-value.is-final {
+  color: var(--petal-2);
+  text-shadow: 0 4px 60px rgba(0, 0, 0, .6), 0 0 130px rgba(249, 174, 197, .6);
+}
+.sh-final-tag {
+  display: block;
+  font-family: var(--sans);
+  font-size: clamp(15px, 2vw, 24px);
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-top: 14px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, .7);
+}
+
+.sh-label {
+  font-size: clamp(15px, 2.1vw, 23px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, .93);
+  margin-top: 22px;
+  letter-spacing: -0.008em;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, .72);
+}
+.sh-label.is-headline {
+  font-size: clamp(32px, 5.4vw, 62px);
+  font-weight: 480;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  max-width: 20ch;
+  margin: 0 auto;
+  text-wrap: balance;
+}
+
+.sh-sub {
+  font-size: clamp(13.5px, 1.5vw, 16px);
+  color: rgba(255, 255, 255, .74);
+  max-width: 56ch;
+  margin: 18px auto 0;
+  line-height: 1.6;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, .8);
+}
+
+.sh-cta { display: flex; gap: 12px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+
+/* A glass button reads on footage where the solid ghost button disappears. */
+.lp-btn-glass {
+  background: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .42);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+.lp-btn-glass:hover { background: rgba(255, 255, 255, .2); border-color: #fff; }
+
+/* Scroll affordance: without it a pinned section reads as a page that has stopped. */
+.sh-hint {
+  position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 36px; border: 1.5px solid rgba(255, 255, 255, .42);
+  border-radius: 999px; z-index: 3; pointer-events: none;
+}
+.sh-hint span {
+  position: absolute; left: 50%; top: 8px; width: 3px; height: 7px;
+  margin-left: -1.5px; border-radius: 2px; background: rgba(255, 255, 255, .8);
+  animation: sh-wheel 1.9s ease-in-out infinite;
+}
+@keyframes sh-wheel {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  60% { transform: translateY(12px); opacity: 0; }
+}
+@media (max-width: 860px), (prefers-reduced-motion: reduce) {
+  .sh-hint { display: none; }
+}
+
+/* The band holding the live product frame, now that the cinematic hero owns the opening. */
+.lp-hero-compact { padding: 84px 0 0; }
+.lp-demo-intro { text-align: center; margin-bottom: 12px; }

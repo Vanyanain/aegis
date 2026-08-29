@@ -19,9 +19,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -577,6 +577,78 @@ def evidence_log(dispute_id: str) -> dict[str, Any]:
 
 if WEB_DIST.exists():
     app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+
+
+    @app.get("/video/{name}")
+    def video(name: str, request: Request):
+        """Serve video with HTTP Range support.
+
+        This exists because the scroll-scrubbed hero drives `video.currentTime` from scroll
+        position, which requires the browser to SEEK, which requires 206 Partial Content.
+
+        Neither FileResponse nor StaticFiles can do it here: Starlette 0.37.2 -- the version
+        FastAPI 0.115 pins -- has no Range handling in FileResponse at all (it arrived in
+        0.41), and StaticFiles delegates to FileResponse. Both answer a Range request with
+        200 and the whole 12 MB body, after which the browser reports `seekable = [0, 0]`
+        and every seek snaps back to zero.
+
+        The failure is silent and deeply misleading: readyState 4, correct duration, no
+        error, `seeked` firing normally -- and a video frozen on frame one while the CSS
+        filters animate around it. Upgrading Starlette under FastAPI's pin is a worse trade
+        than thirty lines of range handling.
+        """
+        # Reject traversal before touching the filesystem.
+        if "/" in name or "\\" in name or name.startswith("."):
+            raise HTTPException(404, "not found")
+        path = (WEB_DIST / "video" / name).resolve()
+        if not path.is_file() or WEB_DIST.resolve() not in path.parents:
+            raise HTTPException(404, "not found")
+
+        size = path.stat().st_size
+        media = "video/mp4" if path.suffix == ".mp4" else "application/octet-stream"
+        if path.suffix in (".jpg", ".jpeg"):
+            media = "image/jpeg"
+        base = {"accept-ranges": "bytes", "cache-control": "public, max-age=86400"}
+
+        raw = request.headers.get("range")
+        if not raw or not raw.startswith("bytes="):
+            return FileResponse(path, media_type=media, headers=base)
+
+        spec = raw[6:].split(",")[0].strip()
+        start_s, _, end_s = spec.partition("-")
+        try:
+            if start_s:
+                start = int(start_s)
+                end = int(end_s) if end_s else size - 1
+            else:
+                # Suffix form "bytes=-500" means the LAST 500 bytes, not from zero.
+                start = max(0, size - int(end_s))
+                end = size - 1
+        except ValueError:
+            raise HTTPException(416, "invalid range")
+
+        end = min(end, size - 1)
+        if start > end or start >= size:
+            return Response(status_code=416, headers={**base, "content-range": f"bytes */{size}"})
+
+        length = end - start + 1
+
+        def chunks(chunk_size: int = 256 * 1024):
+            remaining = length
+            with open(path, "rb") as fh:
+                fh.seek(start)
+                while remaining > 0:
+                    data = fh.read(min(chunk_size, remaining))
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+
+        return StreamingResponse(
+            chunks(), status_code=206, media_type=media,
+            headers={**base, "content-range": f"bytes {start}-{end}/{size}",
+                     "content-length": str(length)},
+        )
 
     @app.get("/{full_path:path}")
     def spa(full_path: str):

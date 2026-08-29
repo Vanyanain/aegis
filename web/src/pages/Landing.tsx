@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { get } from "../api";
+import ScrollHero from "../components/ScrollHero";
 
 /* The marketing page, built on Mercury's section rhythm: a tall hero with a moving product
  * shot, then alternating feature bands, a statistics band, and a closing call to action over
@@ -103,48 +104,17 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* ---------------- hero ---------------- */}
-      <section className="lp-hero">
+      <ScrollHero />
+
+      {/* ---------------- live product frame ---------------- */}
+      <section className="lp-hero lp-hero-compact">
         <Petals />
-        <svg className="lp-branch" viewBox="0 0 340 200" aria-hidden="true">
-          <path
-            d="M340 8 C280 26 232 54 196 92 C176 114 160 134 140 148"
-            stroke="#7d5560" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity=".45"
-          />
-          <path d="M262 44 C250 58 240 64 224 68" stroke="#7d5560" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity=".35" />
-          <path d="M208 82 C202 98 196 106 182 114" stroke="#7d5560" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity=".3" />
-          {[[300, 22], [258, 46], [222, 70], [196, 92], [178, 112], [152, 138], [232, 62], [186, 106]].map(
-            ([cx, cy], i) => (
-              <g key={i} opacity={0.85 - i * 0.06}>
-                {[0, 72, 144, 216, 288].map((a) => (
-                  <ellipse
-                    key={a} cx={cx} cy={cy} rx="5.5" ry="3.2"
-                    fill={i % 3 === 0 ? "var(--petal-3)" : "var(--petal-2)"}
-                    transform={`rotate(${a} ${cx} ${cy}) translate(4 0)`}
-                  />
-                ))}
-                <circle cx={cx} cy={cy} r="1.8" fill="#f6c56b" />
-              </g>
-            )
-          )}
-        </svg>
         <div className="lp-wrap">
-          <div className="lp-eyebrow">Adjudication Evidence &amp; Genuine-Intent Scoring</div>
-          <h1 className="lp-h1">
-            Most chargebacks are lost months before anyone fights them.
-          </h1>
-          <p className="lp-sub">
-            Visa's Compelling Evidence 3.0 is the only thing that reliably wins a friendly-fraud
-            dispute — and it needs data you had to capture 120 days ago. AEGIS tells you which
-            disputes you can defend, which submitted receipts are fabricated, and what to start
-            recording today so next quarter's cases qualify.
-          </p>
-          <div className="lp-cta-row">
-            <Link to="/console" className="lp-btn lp-btn-primary lp-btn-lg">Open the console</Link>
-            <Link to="/console/real" className="lp-btn lp-btn-ghost lp-btn-lg">See the real-data results</Link>
-          </div>
-          <div className="lp-trust">
-            Measured on IEEE-CIS · CORD · SROIE — public datasets, not simulations
+          <div className="lp-demo-intro">
+            <h2 className="lp-h2" style={{ margin: "0 auto" }}>And here is the tool that found it.</h2>
+            <p className="lp-lede" style={{ margin: "14px auto 0" }}>
+              Not a screen recording — the running application, cycling its own screens.
+            </p>
           </div>
         </div>
 
