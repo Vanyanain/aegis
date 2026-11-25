@@ -136,37 +136,6 @@ the rulebook in force when it was raised.
 
 ---
 
-## Running it
-
-The ledger, dispute table, cached forensic features, trained models and a curated evidence
-subset are all committed, so a clone runs without regenerating or retraining anything.
-
-```bash
-pip install -r requirements.txt && brew install tesseract
-```
-
-```bash
-cd web && npm install && npm run build && cd .. && uvicorn aegis.api.main:app --port 8311
-```
-
-To regenerate everything from scratch instead (seed `20260822`, fully deterministic — this
-also rebuilds the 123 MB training corpus, which is not committed):
-
-```bash
-python -m scripts.make_data && python -m scripts.make_receipts 3000 && python -m scripts.extract_evidence
-```
-
-```bash
-python -m scripts.train_sidea && python -m scripts.train_sideb && python -m scripts.score_evidence_oof && python -m scripts.train_fusion && python -m scripts.write_metrics_doc
-```
-
-Deploy (Cloud Run builds the image remotely; no local Docker needed):
-
-```bash
-python -m scripts.prepare_deploy && gcloud run deploy aegis --source . --region=asia-south1 --allow-unauthenticated
-```
-
----
 
 ## Honest caveats
 
